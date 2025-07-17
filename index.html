@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>-- ASCII RPG --</title>
+  <style>
+    body {
+      background-color: black;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      white-space: pre;
+      padding: 10px;
+    }
+    .btn {
+      background: #111;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 4px 10px;
+      margin: 2px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background: #222;
+    }
+    #game { margin-top: 10px; }
+    .ascii-art {
+      font-family: monospace;
+      white-space: pre;
+      line-height: 1.1;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+
+<h2>SANCTUARY RPG: ASCII REMAKE</h2>
+<div id="game"></div>
+
+<script>
+const gameDiv = document.getElementById("game");
+
+// Player Object
+const player = {
+  name: "Hero",
+  level: 1,
+  xp: 0,
+  gold: 100,
+  hp: 100,
+  maxHp: 100,
+  baseAtk: 10,
+  baseDef: 5,
+  inventory: [],
+  equipped: {
+    weapon: null,
+    armor: null
+  },
+  activeQuests: []
+};
+
+// Items - 20 different gear & junk
+const itemPool = [
+  // Weapons
+  { id: 1, name: "Rusty Sword", type: "weapon", atk: 5, def: 0, sell: 15 },
+  { id: 2, name: "Sharp Dagger", type: "weapon", atk: 7, def: 0, sell: 25 },
+  { id: 3, name: "Iron Longsword", type: "weapon", atk: 12, def: 0, sell: 50 },
+  { id: 4, name: "Steel Axe", type: "weapon", atk: 15, def: 0, sell: 70 },
+  { id: 5, name: "Enchanted Bow", type: "weapon", atk: 18, def: 0, sell: 90 },
+
+  // Armor
+  { id: 6, name: "Leather Armor", type: "armor", atk: 0, def: 3, sell: 20 },
+  { id: 7, name: "Chainmail", type: "armor", atk: 0, def: 7, sell: 50 },
+  { id: 8, name: "Plate Armor", type: "armor", atk: 0, def: 12, sell: 80 },
+  { id: 9, name: "Magic Robes", type: "armor", atk: 0, def: 10, sell: 75 },
+  { id: 10, name: "Dragon Scale Armor", type: "armor", atk: 0, def: 20, sell: 120 },
+
+  // Junk / Consumables / Misc (sellable only)
+  { id: 11, name: "Broken Arrow", type: "junk", atk: 0, def: 0, sell: 5 },
+  { id: 12, name: "Old Coin", type: "junk", atk: 0, def: 0, sell: 15 },
+  { id: 13, name: "Torn Cloth", type: "junk", atk: 0, def: 0, sell: 3 },
+  { id: 14, name: "Rusty Helmet", type: "junk", atk: 0, def: 0, sell: 10 },
+  { id: 15, name: "Potion Flask", type: "junk", atk: 0, def: 0, sell: 25 },
+  { id: 16, name: "Silver Ring", type: "junk", atk: 0, def: 0, sell: 40 },
+  { id: 17, name: "Golden Necklace", type: "junk", atk: 0, def: 0, sell: 70 },
+  { id: 18, name: "Ancient Scroll", type: "junk", atk: 0, def: 0, sell: 60 },
+  { id: 19, name: "Gemstone", type: "junk", atk: 0, def: 0, sell: 100 },
+  { id: 20, name: "Cursed Idol", type: "junk", atk: 0, def: 0, sell: 150 }
+];
+
+// Enemies with ASCII art and loot table references (drop items from itemPool)
+const enemies = [
+  {
+    name: "Rat",
+    maxHp: 30,
+    atk: 5,
+    def: 2,
+    ascii: `  (\\__/) 
+ (o.o ) 
+ (> <)`,
+    lootTable: [11, 12], // Broken Arrow, Old Coin
+    xp: 10,
+    gold: 5
+  },
+  {
+    name: "Skeleton",
+    maxHp: 50,
+    atk: 8,
+    def: 4,
+    ascii: `
+ [o_o]
+ /|\\ 
+ / \\`,
+    lootTable: [13, 14], // Torn Cloth, Rusty Helmet
+    xp: 20,
+    gold: 15
+  },
+  {
+    name: "Goblin",
+    maxHp: 70,
+    atk: 12,
+    def: 5,
+    ascii: `
+ ,^.
+ <_>
+ /|\\`,
+    lootTable: [15, 16], // Potion Flask, Silver Ring
+    xp: 30,
+    gold: 25
+  },
+  {
+    name: "Ghoul",
+    maxHp: 90,
+    atk: 15,
+    def: 6,
+    ascii: `
+  .-.
+ (o o)
+  |=|
+ /   \\`,
+    lootTable: [17, 18], // Golden Necklace, Ancient Scroll
+    xp: 45,
+    gold: 40
+  },
+  {
+    name: "Orc",
+    maxHp: 120,
+    atk: 18,
+    def: 8,
+    ascii: `
+  __,='\`\`\`\`\`\`'=[]
+ /          |
+|           |
+ \\          | 
+  '=========='`,
+    lootTable: [19, 20], // Gemstone, Cursed Idol
+    xp: 60,
+    gold: 60
+  }
+];
+
+// Utility Functions
+
+function shuffle(arr) {
+  return arr
+    .map(v => ({ v, sort: Math.random() }))
+    .sort((a,b) => a.sort - b.sort)
+    .map(({v}) => v);
+}
+
+function getPlayerAtk() {
+  let atk = player.baseAtk;
+  if(player.equipped.weapon) atk += player.equipped.weapon.atk;
+  return atk;
+}
+
+function getPlayerDef() {
+  let def = player.baseDef;
+  if(player.equipped.armor) def += player.equipped.armor.def;
+  return def;
+}
+
+function render(text, buttons=[]) {
+  gameDiv.innerText = text;
+  buttons.forEach(b => {
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.innerText = b.label;
+    btn.onclick = b.action;
+    gameDiv.appendChild(btn);
+  });
+}
+
+function startGame() {
+  render(`Welcome, ${player.name}!
+
+Level: ${player.level} | HP: ${player.hp}/${player.maxHp} | Gold: ${player.gold}G
+Choose your path:`, [
+    { label: "Battle", action: startBattle },
+    { label: "Town", action: showTown },
+    player.level >= 10 ? { label: "Dungeon", action: enterDungeon } : null,
+  ].filter(Boolean));
+}
+
+function showTown() {
+  let text = `You are in the Town.
+
+Options:
+`;
+  let buttons = [
+    { label: "Rest (Heal)", action: () => { player.hp = player.maxHp; startGame(); }},
+    { label: "Blacksmith", action: blacksmith },
+    { label: "Quests", action: showQuests },
+    { label: "My Quests", action: viewActiveQuests },
+    { label: "Inventory", action: viewInventory },
+    player.level >= 5 ? { label: "Shop", action: openShop } : null,
+    { label: "Leave", action: startGame }
+  ].filter(Boolean);
+  
+  if(player.level < 5) {
+    text += "\n[Shop unlocks at level 5]";
+  } else {
+    text += "\n[Shop is now open!]";
+  }
+  
+  render(text, buttons);
+}
+
+// Blacksmith placeholder
+function blacksmith() {
+  render("The blacksmith is busy forging weapons. (Coming soon!)", [
+    { label: "Back to Town", action: showTown }
+  ]);
+}
+
+// Quests
+const allQuests = [
+  { title: "Clear the Rat Nest", desc: "Defeat 3 rats.", reward: { xp: 20, gold: 30 }, complete: false },
+  { title: "Skeleton Cleanup", desc: "Defeat 2 skeletons.", reward: { xp: 30, gold: 40 }, complete: false },
+  { title: "Goblin Menace", desc: "Defeat 2 goblins.", reward: { xp: 40, gold: 50 }, complete: false },
+  { title: "Treasure Hunt", desc: "Find a rare item from a battle.", reward: { xp: 50, gold: 60 }, complete: false },
+  { title: "Protect the Shop", desc: "Survive 3 battles in a row.", reward: { xp: 35, gold: 45 }, complete: false },
+  { title: "Training Day", desc: "Deal over 100 total damage.", reward: { xp: 25, gold: 25 }, complete: false },
+];
+
+function showQuests() {
+  let available = allQuests.filter(q => !player.activeQuests.includes(q) && !q.complete);
+  available = shuffle(available).slice(0, 3);
+  let asciiSign = `
+     _________
+    |         |
+    |  QUEST  |
+    |_________|
+     |       |
+     |_______|
+`;
+  let questText = asciiSign + "\nAvailable Quests:";
+  let buttons = [];
+  available.forEach((quest, idx) => {
+    questText += `\n${idx + 1}. ${quest.title} - ${quest.desc} (XP: ${quest.reward.xp}, ¤${quest.reward.gold})`;
+    buttons.push({ label: `Accept ${idx + 1}`, action: () => acceptQuest(quest) });
+  });
+  buttons.push({ label: "Back", action: showTown });
+  render(questText, buttons);
+}
+
+function acceptQuest(quest) {
+  if(player.activeQuests.length >= 3) {
+    render("You can only accept 3 quests at a time!", [
+      { label: "Back", action: showQuests }
+    ]);
+    return;
+  }
+  player.activeQuests.push(quest);
+  render(`You accepted the quest: ${quest.title}`, [
+    { label: "Back to Town", action: showTown }
+  ]);
+}
+
+function viewActiveQuests() {
+  if(player.activeQuests.length === 0) {
+    render("You have no active quests.", [
+      { label: "Back", action: showTown }
+    ]);
+    return;
+  }
+  let text = "Your Active Quests:";
+  player.activeQuests.forEach((q,i) => {
+    text += `\n${i + 1}. ${q.title} - ${q.desc}`;
+  });
+  render(text, [
+    { label: "Back", action: showTown }
+  ]);
+}
+
+// Inventory view with equip/unequip & sell
+function viewInventory() {
+  if(player.inventory.length === 0) {
+    render("Your inventory is empty.", [
+      { label: "Back", action: showTown }
+    ]);
+    return;
+  }
+  let text = "Inventory:";
+  player.inventory.forEach((item, idx) => {
+    let equippedMark = "";
+    if(player.equipped.weapon && player.equipped.weapon.id === item.id) equippedMark = " (Equipped Weapon)";
+    if(player.equipped.armor && player.equipped.armor.id === item.id) equippedMark = " (Equipped Armor)";
+    text += `\n${idx + 1}. ${item.name}${equippedMark} - Type: ${item.type}, Atk: ${item.atk}, Def: ${item.def}, Sell: ${item.sell}G`;
+  });
+
+  let buttons = player.inventory.map((item, idx) => ({
+    label: `Equip/Sell ${idx + 1}`,
+    action: () => inventoryItemMenu(idx)
+  }));
+  buttons.push({ label: "Back", action: showTown });
+  render(text, buttons);
+}
+
+function inventoryItemMenu(index) {
+  const item = player.inventory[index];
+  let buttons = [];
+  if(item.type === "weapon" || item.type === "armor") {
+    buttons.push({ label: "Equip", action: () => {
+      equipItem(index);
+    }});
+  }
+  buttons.push({ label: "Sell", action: () => {
+    sellItem(index);
+  }});
+  buttons.push({ label: "Back to Inventory", action: viewInventory });
+  render(`Item: ${item.name}\nType: ${item.type}\nAtk: ${item.atk}\nDef: ${item.def}\nSell Value: ${item.sell}G`, buttons);
+}
+
+function equipItem(index) {
+  const item = player.inventory[index];
+  if(item.type === "weapon") {
+    player.equipped.weapon = item;
+  } else if(item.type === "armor") {
+    player.equipped.armor = item;
+  }
+  render(`You equipped ${item.name}.`, [
+    { label: "Back to Inventory", action: viewInventory }
+  ]);
+}
+
+function sellItem(index) {
+  const item = player.inventory[index];
+  player.gold += item.sell;
+  player.inventory.splice(index, 1);
+  render(`You sold ${item.name} for ${item.sell} gold.`, [
+    { label: "Back to Inventory", action: viewInventory }
+  ]);
+}
+
+// Shop screen with buy/sell
+function openShop() {
+  let text = `Welcome to the Shop! Your Gold: ${player.gold}G
+
+Available items to buy:
+`;
+  let buttons = [];
+  itemPool.forEach((item, idx) => {
+    buttons.push({
+      label: `Buy: ${item.name} (Atk:${item.atk} Def:${item.def}) - Cost: ${item.sell * 2}G`,
+      action: () => buyItem(item)
+    });
+    text += `\n${idx + 1}. ${item.name} (Atk:${item.atk} Def:${item.def}) - Cost: ${item.sell * 2}G`;
+  });
+
+  buttons.push({ label: "Sell Items", action: sellFromShop });
+  buttons.push({ label: "Back to Town", action: showTown });
+
+  render(text, buttons);
+}
+
+function buyItem(item) {
+  const cost = item.sell * 2;
+  if(player.gold < cost) {
+    render("You don't have enough gold to buy that.", [
+      { label: "Back to Shop", action: openShop }
+    ]);
+    return;
+  }
+  player.gold -= cost;
+  player.inventory.push({...item}); // clone item to inventory
+  render(`You bought a ${item.name} for ${cost} gold.`, [
+    { label: "Back to Shop", action: openShop }
+  ]);
+}
+
+function sellFromShop() {
+  if(player.inventory.length === 0) {
+    render("You have nothing to sell.", [
+      { label: "Back to Shop", action: openShop }
+    ]);
+    return;
+  }
+  let text = "Select item to sell:\n";
+  let buttons = player.inventory.map((item, idx) => ({
+    label: `Sell: ${item.name} for ${item.sell}G`,
+    action: () => {
+      player.gold += item.sell;
+      player.inventory.splice(idx, 1);
+      render(`You sold ${item.name} for ${item.sell} gold.`, [
+        { label: "Back to Shop", action: openShop }
+      ]);
+    }
+  }));
+  buttons.push({ label: "Back to Shop", action: openShop });
+  render(text, buttons);
+}
+
+// Dungeon functionality
+
+function enterDungeon() {
+  if(player.level < 10) {
+    render("The dungeon is sealed. Reach level 10 to enter.", [
+      { label: "Back", action: startGame }
+    ]);
+    return;
+  }
+  nextDungeonRoom();
+}
+
+let currentEnemy = null;
+
+function nextDungeonRoom() {
+  const roll = Math.random();
+  if(roll < 0.4) {
+    // Encounter enemy
+    const enemy = enemies[Math.floor(Math.random() * enemies.length)];
+    currentEnemy = JSON.parse(JSON.stringify(enemy)); // deep copy so hp can change
+    renderEnemyEncounter(currentEnemy);
+  } else if(roll < 0.7) {
+    // Find treasure (random item)
+    const item = itemPool[Math.floor(Math.random() * itemPool.length)];
+    player.inventory.push({...item});
+    render(`You found a ${item.name}! It has been added to your inventory.`, [
+      { label: "Continue", action: nextDungeonRoom },
+      { label: "Return to Town", action: startGame }
+    ]);
+  } else {
+    // Branching path
+    render(`You reach a fork in the dungeon. Which way do you go?`, [
+      { label: "Left", action: nextDungeonRoom },
+      { label: "Right", action: nextDungeonRoom },
+      { label: "Return to Town", action: startGame }
+    ]);
+  }
+}
+
+function renderEnemyEncounter(enemy) {
+  let text = `A wild ${enemy.name} appears!
+
+${enemy.ascii}
+
+HP: ${enemy.maxHp}
+Attack: ${enemy.atk}
+Defense: ${enemy.def}
+
+Your HP: ${player.hp}/${player.maxHp}
+
+What will you do?`;
+  render(text, [
+    { label: "Attack", action: () => playerAttack(enemy) },
+    { label: "Run", action: () => {
+      render("You fled safely back to town.", [
+        { label: "Back to Town", action: startGame }
+      ]);
+    }}
+  ]);
+}
+
+function playerAttack(enemy) {
+  // Player damage calculation
+  const playerAtk = getPlayerAtk();
+  let dmg = playerAtk - enemy.def;
+  if(dmg < 1) dmg = 1; // min 1 damage
+  enemy.maxHp -= dmg;
+
+  let text = `You hit the ${enemy.name} for ${dmg} damage!\n`;
+
+  if(enemy.maxHp <= 0) {
+    text += `You defeated the ${enemy.name}!\n`;
+    player.xp += enemy.xp;
+    player.gold += enemy.gold;
+
+    // Loot drop - random from lootTable
+    if(enemy.lootTable.length) {
+      const dropId = enemy.lootTable[Math.floor(Math.random() * enemy.lootTable.length)];
+      const lootItem = itemPool.find(i => i.id === dropId);
+      if(lootItem) {
+        player.inventory.push({...lootItem});
+        text += `You found a ${lootItem.name}!\n`;
+      }
+    }
+
+    checkLevelUp();
+
+    render(text + `XP: ${player.xp} | Gold: ${player.gold}`, [
+      { label: "Back to Town", action: startGame }
+    ]);
+    currentEnemy = null;
+  } else {
+    // Enemy attacks back
+    setTimeout(() => enemyAttack(enemy), 1000);
+    render(text + `Enemy HP: ${enemy.maxHp}`, [
+      { label: "Attack", action: () => playerAttack(enemy) },
+      { label: "Run", action: () => {
+        render("You fled safely back to town.", [
+          { label: "Back to Town", action: startGame }
+        ]);
+      }}
+    ]);
+  }
+}
+
+function enemyAttack(enemy) {
+  let dmg = enemy.atk - getPlayerDef();
+  if(dmg < 1) dmg = 1;
+  player.hp -= dmg;
+  let text = `The ${enemy.name} attacks you for ${dmg} damage!\nYour HP: ${player.hp}/${player.maxHp}`;
+  if(player.hp <= 0) {
+    text += "\nYou have been defeated! Game Over.";
+    render(text, [
+      { label: "Restart", action: () => location.reload() }
+    ]);
+    return;
+  }
+  render(text, [
+    { label: "Attack", action: () => playerAttack(enemy) },
+    { label: "Run", action: () => {
+      render("You fled safely back to town.", [
+        { label: "Back to Town", action: startGame }
+      ]);
+    }}
+  ]);
+}
+
+function checkLevelUp() {
+  const levelThreshold = player.level * 100;
+  if(player.xp >= levelThreshold) {
+    player.level++;
+    player.maxHp += 20;
+    player.hp = player.maxHp;
+    player.baseAtk += 5;
+    player.baseDef += 2;
+    player.xp = 0;
+    render(`Level Up! You are now level ${player.level}!\nHP, Attack, and Defense increased.`, [
+      { label: "Continue", action: startGame }
+    ]);
+  } else {
+    startGame();
+  }
+}
+
+// Helper: Shuffle
+function shuffleArray(arr) {
+  return arr
+    .map(v => ({ v, sort: Math.random() }))
+    .sort((a,b) => a.sort - b.sort)
+    .map(({v}) => v);
+}
+
+function startBattle() {
+  // Simple random enemy encounter from enemies list
+  const enemy = enemies[Math.floor(Math.random() * enemies.length)];
+  currentEnemy = JSON.parse(JSON.stringify(enemy)); // copy
+  renderEnemyEncounter(currentEnemy);
+}
+
+startGame();
+</script>
+
+</body>
+</html>
