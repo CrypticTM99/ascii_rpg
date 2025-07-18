@@ -35,13 +35,13 @@
 <h2>--{ ASCII RPG }--</h2>
 <div id="game"></div>
 <script>
+const gameDiv = document.getElementById("game");
+<script>
 // Mobile compatibility tweak
 if (/Mobi|Android/i.test(navigator.userAgent)) {
   document.body.style.fontSize = "14px";
   document.body.style.padding = "5px";
 }
-<script>
-const gameDiv = document.getElementById("game");
 
 // Player Object
 const player = {
