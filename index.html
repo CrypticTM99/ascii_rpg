@@ -63,9 +63,6 @@ const itemPool = [
   { id: 4, name: "Steel Axe", type: "weapon", atk: 15, def: 0, sell: 70 },
   { id: 5, name: "Enchanted Bow", type: "weapon", atk: 18, def: 0, sell: 90 },
   { id: 21, name: "Iron Mace", type: "weapon", atk: 16, def: 2, sell: 60 },
-  { id: 25, name: "Bandit's Cloak", type: "armor", atk: 0, def: 14, sell: 85 },
-  { id: 26, name: "Paladin’s Oath", type: "armor", atk: 0, def: 22, sell: 130 },
-  
 
   // Armor
   { id: 6, name: "Leather Armor", type: "armor", atk: 0, def: 3, sell: 20 },
@@ -73,6 +70,8 @@ const itemPool = [
   { id: 8, name: "Plate Armor", type: "armor", atk: 0, def: 12, sell: 80 },
   { id: 9, name: "Magic Robes", type: "armor", atk: 0, def: 10, sell: 75 },
   { id: 10, name: "Dragon Scale Armor", type: "armor", atk: 0, def: 20, sell: 320 },
+  { id: 25, name: "Bandit's Cloak", type: "armor", atk: 0, def: 14, sell: 85 },
+  { id: 26, name: "Paladin’s Oath", type: "armor", atk: 0, def: 22, sell: 130 },
 
   // Junk / Consumables / Misc (sellable only)
   { id: 11, name: "Broken Arrow", type: "junk", atk: 0, def: 0, sell: 5 },
@@ -121,10 +120,15 @@ const enemies = [
     maxHp: 70,
     atk: 12,
     def: 5,
-    ascii: `
- ,^.
- <_>
- /|\\`,
+    ascii: `.-,;='';_),-.
+     \\_\\(),()/_/
+       (,___,)
+      ,-/\`~\`\\-,___
+     / /).:.('--._)
+    {_[ (_,_)
+        | Y |
+       /  |  \\
+       """ """`,
     lootTable: [15, 16], // Potion Flask, Silver Ring
     xp: 30,
     gold: 25
@@ -149,7 +153,7 @@ const enemies = [
     atk: 18,
     def: 8,
     ascii: `
-  __,='\`\`\`\`\`\`'=[]
+  __[]=,='''''=[]
  /     ' [ '   |
 |     ,--.,--. |
  \\          | 
@@ -172,80 +176,139 @@ const enemies = [
     gold: 65
   },
   {
-  name: "Shadow Wraith",
-  maxHp: 100,
-  atk: 22,
-  def: 5,
-  ascii: `
+    name: "Shadow Wraith",
+    maxHp: 100,
+    atk: 22,
+    def: 5,
+    ascii: `
    .-.
   (o o)
    |=|
   /   \\
   |||||
  /_____\\`,
-  lootTable: [20, 22], // Cursed Idol, Shadow Fang
-  xp: 75,
-  gold: 80
-},
-{
-  name: "Mimic Chest",
-  maxHp: 80,
-  atk: 17,
-  def: 9,
-  ascii: `
+    lootTable: [20, 22], // Cursed Idol, Shadow Fang (Note: Shadow Fang id 22 not in items? Can add if desired)
+    xp: 75,
+    gold: 80
+  },
+  {
+    name: "Mimic Chest",
+    maxHp: 80,
+    atk: 17,
+    def: 9,
+    ascii: `
   _______
  /       \\
 |  [ ] [] |
  \\_______/
   |     |`,
-  lootTable: [23, 3, 16], // Mimic Tongue, Iron Longsword, Silver Ring
-  xp: 60,
-  gold: 45
-},
-{
-  name: "Fire Elemental",
-  maxHp: 110,
-  atk: 25,
-  def: 6,
-  ascii: `
+    lootTable: [23, 3, 16], // Mimic Tongue, Iron Longsword, Silver Ring
+    xp: 60,
+    gold: 45
+  },
+  {
+    name: "Fire Elemental",
+    maxHp: 110,
+    atk: 25,
+    def: 6,
+    ascii: `
    (    )
   (🔥🔥🔥)
    (    )
     |||
    /   \\`,
-  lootTable: [24, 5, 9], // Burning Ember, Enchanted Bow, Magic Robes
-  xp: 85,
-  gold: 100
-},
-{
-  name: "Bandit Rogue",
-  maxHp: 90,
-  atk: 19,
-  def: 7,
-  ascii: `
-   ,--.
-  (o_o )
-  /|  |\\
-  / \\ / \\`,
-  lootTable: [25, 2, 15], // Bandit's Cloak, Sharp Dagger, Potion Flask
-  xp: 70,
-  gold: 60
-},
-{
-  name: "Doomed Paladin",
-  maxHp: 140,
-  atk: 28,
-  def: 14,
-  ascii: `
-  [o_o]
-  /|\\
- /_|_\\
-  | |`,
-  lootTable: [26, 10, 19], // Paladin’s Oath, Dragon Scale Armor, Gemstone
-  xp: 100,
-  gold: 120
-}
-  ];
+    lootTable: [24, 5, 9], // Burning Ember, Enchanted Bow, Magic Robes
+    xp: 85,
+    gold: 100
+  },
+  {
+    name: "Skitterspawn",
+    maxHp: 90,
+    atk: 19,
+    def: 7,
+    ascii: `
+        \\     /
+  --- (o o) ---
+     / \\_/ \\
+`,
+    lootTable: [25, 2, 15], // Bandit's Cloak, Sharp Dagger, Potion Flask
+    xp: 70,
+    gold: 60
+  },
+  {
+    name: "Doomed Paladin",
+    maxHp: 140,
+    atk: 28,
+    def: 14,
+    ascii: `_,.
+    ,\` -.)
+   ( _/-\\-._
+  /,|\`--._,-^|            ,
+  \\_| |\`-._/||          ,'|
+    |  \`-, / |         /  /
+    |     || |        /  /
+     \`r-._||/   __   /  /
+ __,-<_     )\`-/  \`./  /
+'  \\   \`---'   \\   /  /
+    |           |./  /
+    /           //  /
+\\_/' \\         |/  /
+ |    |   _,^-'/  /
+ |    , \`\`  (\\/  /_
+  \\,.->._    \\X-=/^
+  (  /   \`-._//^\`
+   \`Y-.____(__}
+    |     {__)
+          (),`,
+    lootTable: [26, 10, 19], // Paladin’s Oath, Dragon Scale Armor, Gemstone
+    xp: 100,
+    gold: 120
+  },
+  {
+    name: "Lady Ravio",
+    maxHp: 280,
+    atk: 48,
+    def: 24,
+    ascii: `..-----..
+          _..'''¯¯         ¯¯'''.._
+        .'   ]      :  :        [     '.
+        |  \\' .                 .'\\/  |
+         \\ |'.\\               /.'|  /
+          '.\\..\\=|--.   .--|= /../.'
+            |.'  '(|)/ \\(|) '  '.|
+            /_.'| ¯¯¯   ¯¯¯ |'._\\
+             @   \\  '---'  /   @
+                  \\__ ¯ __/
+                    |¯'¯|`,
+    lootTable: [26, 10, 19], // Paladin’s Oath, Dragon Scale Armor, Gemstone
+    xp: 100,
+    gold: 120
+  },
+  {
+    name: "Vorthalon, Starbinder of Endlight",
+    maxHp: 350,
+    atk: 55,
+    def: 30,
+    ascii: `
+         ____====-_  _-====____
+            _--^^^#####//      \\\\#####^^^--_
+         _-^##########// (    ) \\\\##########^-_
+        -############//  |\\^^/|  \\\\############-
+      _/############//   (@::@)   \\\\############\\_
+     /#############((     \\\\//     ))#############\\
+    -###############\\\\    (oo)    //###############-
+   -#################\\\\  / UUU \\  //#################-
+  -##/|###############\\\\/  (_)  \\\\//###############|\\##-
+  |/ |#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\| \\|
+  || |                      █                       | ||
+  || |       Vorthalon, Starbinder of Endlight      | ||
+  \\_|________________________________________________|_/
+`,
+    lootTable: [26, 10, 19, 20], // Paladin’s Oath, Dragon Scale Armor, Gemstone, Cursed Idol
+    xp: 200,
+    gold: 300
+  }
+];
 
 // Utility Functions
 
@@ -302,6 +365,7 @@ Options:
     { label: "My Quests", action: viewActiveQuests },
     { label: "Inventory", action: viewInventory },
     player.level >= 5 ? { label: "Shop", action: openShop } : null,
+    player.level >= 15 ? { label: "Challenge Vorthalon", action: () => startSpecificBattle(enemies.find(e => e.name === "Vorthalon, Starbinder of Endlight")) } : null,
     { label: "Leave", action: startGame }
   ].filter(Boolean);
   
@@ -410,256 +474,323 @@ function inventoryItemMenu(index) {
   let buttons = [];
   if(item.type === "weapon" || item.type === "armor") {
     buttons.push({ label: "Equip", action: () => {
-      equipItem(index);
+      if(item.type === "weapon") player.equipped.weapon = item;
+      if(item.type === "armor") player.equipped.armor = item;
+      render(`Equipped ${item.name}.`, [
+        { label: "Back to Inventory", action: viewInventory }
+      ]);
     }});
   }
-  buttons.push({ label: "Sell", action: () => {
-    sellItem(index);
+  buttons.push({ label: `Sell for ${item.sell}G`, action: () => {
+    player.gold += item.sell;
+    player.inventory.splice(index, 1);
+    render(`Sold ${item.name} for ${item.sell} gold.`, [
+      { label: "Back to Inventory", action: viewInventory }
+    ]);
   }});
-  buttons.push({ label: "Back to Inventory", action: viewInventory });
-  render(`Item: ${item.name}\nType: ${item.type}\nAtk: ${item.atk}\nDef: ${item.def}\nSell Value: ${item.sell}G`, buttons);
+  buttons.push({ label: "Back", action: viewInventory });
+  render(`What do you want to do with ${item.name}?`, buttons);
 }
 
-function equipItem(index) {
-  const item = player.inventory[index];
-  if(item.type === "weapon") {
-    player.equipped.weapon = item;
-  } else if(item.type === "armor") {
-    player.equipped.armor = item;
-  }
-  render(`You equipped ${item.name}.`, [
-    { label: "Back to Inventory", action: viewInventory }
-  ]);
-}
+// Shop with buy and sell
+const shopItems = [
+  itemPool.find(i => i.id === 1), // Rusty Sword
+  itemPool.find(i => i.id === 6), // Leather Armor
+  itemPool.find(i => i.id === 3), // Iron Longsword
+  itemPool.find(i => i.id === 7), // Chainmail
+  itemPool.find(i => i.id === 4), // Steel Axe
+  itemPool.find(i => i.id === 8), // Plate Armor
+  itemPool.find(i => i.id === 5), // Enchanted Bow
+];
 
-function sellItem(index) {
-  const item = player.inventory[index];
-  player.gold += item.sell;
-  player.inventory.splice(index, 1);
-  render(`You sold ${item.name} for ${item.sell} gold.`, [
-    { label: "Back to Inventory", action: viewInventory }
-  ]);
-}
-
-// Shop screen with buy/sell
 function openShop() {
-  let text = `Welcome to the Shop! Your Gold: ${player.gold}G
+  let text = "Welcome to the Shop! What would you like to do?";
+  let buttons = [
+    { label: "Buy Items", action: showShopBuy },
+    { label: "Sell Items", action: viewInventory },
+    { label: "Back to Town", action: showTown }
+  ];
+  render(text, buttons);
+}
 
-Available items to buy:
-`;
-  let buttons = [];
-  itemPool.forEach((item, idx) => {
-    buttons.push({
-      label: `Buy: ${item.name} (Atk:${item.atk} Def:${item.def}) - Cost: ${item.sell * 2}G`,
-      action: () => buyItem(item)
-    });
-    text += `\n${idx + 1}. ${item.name} (Atk:${item.atk} Def:${item.def}) - Cost: ${item.sell * 2}G`;
+function showShopBuy() {
+  let text = "Items for Sale:\n";
+  shopItems.forEach((item, idx) => {
+    const cost = item.sell * 2;
+    text += `${idx + 1}. ${item.name} - Cost: ${cost}G (Atk: ${item.atk}, Def: ${item.def})\n`;
   });
-
-  buttons.push({ label: "Sell Items", action: sellFromShop });
-  buttons.push({ label: "Back to Town", action: showTown });
-
+  const buttons = shopItems.map((item, idx) => ({
+    label: `Buy ${item.name}`,
+    action: () => buyItem(item)
+  }));
+  buttons.push({ label: "Back to Shop", action: openShop });
   render(text, buttons);
 }
 
 function buyItem(item) {
   const cost = item.sell * 2;
   if(player.gold < cost) {
-    render("You don't have enough gold to buy that.", [
+    render(`You don't have enough gold to buy ${item.name}.`, [
       { label: "Back to Shop", action: openShop }
     ]);
     return;
   }
   player.gold -= cost;
-  player.inventory.push({...item}); // clone item to inventory
-  render(`You bought a ${item.name} for ${cost} gold.`, [
+  player.inventory.push(item);
+  render(`You bought ${item.name} for ${cost} gold.`, [
     { label: "Back to Shop", action: openShop }
   ]);
 }
 
-function sellFromShop() {
-  if(player.inventory.length === 0) {
-    render("You have nothing to sell.", [
-      { label: "Back to Shop", action: openShop }
+// Battle system
+function startBattle() {
+const validEnemies = enemies.filter(e => e.name !== "Vorthalon, Starbinder of Endlight"); //Will add Boss to town , button is there but does nothing right now
+const enemy = JSON.parse(JSON.stringify(validEnemies[Math.floor(Math.random() * validEnemies.length)]));
+  enemy.hp = enemy.maxHp;
+
+  function battleTurn() {
+    let text = `Battle: ${player.name} vs ${enemy.name}\n\n`;
+    text += `Your HP: ${player.hp}/${player.maxHp}\nEnemy HP: ${enemy.hp}/${enemy.maxHp}\n\n`;
+    text += enemy.ascii + "\n\n";
+    text += "Choose an action:";
+
+    render(text, [
+      { label: "Attack", action: () => {
+        let playerAtk = getPlayerAtk();
+        let damage = Math.max(playerAtk - enemy.def, 1);
+        enemy.hp -= damage;
+
+        let battleLog = `You hit ${enemy.name} for ${damage} damage.\n`;
+
+        if(enemy.hp <= 0) {
+          player.xp += enemy.xp;
+          player.gold += enemy.gold;
+
+          let loot = [];
+          enemy.lootTable.forEach(id => {
+            if(Math.random() < 0.5) {
+              const item = itemPool.find(i => i.id === id);
+              if(item) loot.push(item);
+            }
+          });
+          loot.forEach(item => player.inventory.push(item));
+
+          player.activeQuests.forEach(q => {
+            if(!q.complete && q.desc.toLowerCase().includes(enemy.name.toLowerCase())) {
+              q.complete = true;
+            }
+          });
+
+          battleLog += `You defeated ${enemy.name}!\nGained ${enemy.xp} XP and ${enemy.gold} gold.\n`;
+          if(loot.length > 0) {
+            battleLog += "You found: " + loot.map(i => i.name).join(", ") + ".\n";
+          }
+
+          if(player.xp >= player.level * 50) {
+            player.level++;
+            player.maxHp += 10;
+            player.hp = player.maxHp;
+            player.baseAtk += 2;
+            player.baseDef += 1;
+            battleLog += `\nYou leveled up to level ${player.level}!\nStats increased! HP restored.`;
+          }
+
+          render(battleLog, [
+            { label: "Back to Town", action: showTown }
+          ]);
+          return;
+        }
+
+        let enemyAtk = enemy.atk;
+        let damageToPlayer = Math.max(enemyAtk - getPlayerDef(), 1);
+        player.hp -= damageToPlayer;
+        battleLog += `${enemy.name} hits you for ${damageToPlayer} damage.\n`;
+
+        if(player.hp <= 0) {
+          render("You have been defeated! Game Over.", [
+            { label: "Restart Game", action: () => location.reload() }
+          ]);
+          return;
+        }
+
+        render(battleLog, [
+          { label: "Next Turn", action: battleTurn },
+          { label: "Run Away", action: showTown }
+        ]);
+      }},
+      { label: "Run Away", action: showTown }
     ]);
-    return;
   }
-  let text = "Select item to sell:\n";
-  let buttons = player.inventory.map((item, idx) => ({
-    label: `Sell: ${item.name} for ${item.sell}G`,
-    action: () => {
-      player.gold += item.sell;
-      player.inventory.splice(idx, 1);
-      render(`You sold ${item.name} for ${item.sell} gold.`, [
-        { label: "Back to Shop", action: openShop }
-      ]);
-    }
-  }));
-  buttons.push({ label: "Back to Shop", action: openShop });
-  render(text, buttons);
+
+  battleTurn();
 }
 
-// Dungeon functionality
+// --- Dungeon Code ---
+
+const dungeonWidth = 10;
+const dungeonHeight = 8;
+const dungeonMap = [
+  "##########",
+  "#........#",
+  "#..##....#",
+  "#..#..#..#",
+  "#..##....#",
+  "#........#",
+  "#..####..#",
+  "##########"
+];
+let dungeonPos = { x: 2, y: 2 };
 
 function enterDungeon() {
-  if(player.level < 10) {
-    render("The dungeon is sealed. Reach level 10 to enter.", [
-      { label: "Back", action: startGame }
-    ]);
-    return;
-  }
-  nextDungeonRoom();
+  dungeonPos = { x: 2, y: 2 };
+  renderDungeon();
 }
 
-let currentEnemy = null;
-
-function nextDungeonRoom() {
-  const roll = Math.random();
-  if(roll < 0.4) {
-    // Encounter enemy
-    const enemy = enemies[Math.floor(Math.random() * enemies.length)];
-    currentEnemy = JSON.parse(JSON.stringify(enemy)); // deep copy so hp can change
-    renderEnemyEncounter(currentEnemy);
-  } else if(roll < 0.7) {
-    // Find treasure (random item)
-    const item = itemPool[Math.floor(Math.random() * itemPool.length)];
-    player.inventory.push({...item});
-    render(`You found a ${item.name}! It has been added to your inventory.`, [
-      { label: "Continue", action: nextDungeonRoom },
-      { label: "Return to Town", action: startGame }
-    ]);
-  } else {
-    // Branching path
-    render(`You reach a fork in the dungeon. Which way do you go?`, [
-      { label: "Left", action: nextDungeonRoom },
-      { label: "Right", action: nextDungeonRoom },
-      { label: "Return to Town", action: startGame }
-    ]);
-  }
-}
-
-function renderEnemyEncounter(enemy) {
-  let text = `A wild ${enemy.name} appears!
-
-${enemy.ascii}
-
-HP: ${enemy.maxHp}
-Attack: ${enemy.atk}
-Defense: ${enemy.def}
-
-Your HP: ${player.hp}/${player.maxHp}
-
-What will you do?`;
-  render(text, [
-    { label: "Attack", action: () => playerAttack(enemy) },
-    { label: "Run", action: () => {
-      render("You fled safely back to town.", [
-        { label: "Back to Town", action: startGame }
-      ]);
-    }}
-  ]);
-}
-
-function playerAttack(enemy) {
-  // Player damage calculation
-  const playerAtk = getPlayerAtk();
-  let dmg = playerAtk - enemy.def;
-  if(dmg < 1) dmg = 1; // min 1 damage
-  enemy.maxHp -= dmg;
-
-  let text = `You hit the ${enemy.name} for ${dmg} damage!\n`;
-
-  if(enemy.maxHp <= 0) {
-    text += `You defeated the ${enemy.name}!\n`;
-    player.xp += enemy.xp;
-    player.gold += enemy.gold;
-
-    // Loot drop - random from lootTable
-    if(enemy.lootTable.length) {
-      const dropId = enemy.lootTable[Math.floor(Math.random() * enemy.lootTable.length)];
-      const lootItem = itemPool.find(i => i.id === dropId);
-      if(lootItem) {
-        player.inventory.push({...lootItem});
-        text += `You found a ${lootItem.name}!\n`;
+function renderDungeon() {
+  let dungeonDisplay = "";
+  for(let y = 0; y < dungeonHeight; y++) {
+    for(let x = 0; x < dungeonWidth; x++) {
+      if(dungeonPos.x === x && dungeonPos.y === y) {
+        dungeonDisplay += "@";
+      } else {
+        dungeonDisplay += dungeonMap[y][x];
       }
     }
-
-    checkLevelUp();
-
-    render(text + `XP: ${player.xp} | Gold: ${player.gold}`, [
-      { label: "Back to Town", action: startGame }
-    ]);
-    currentEnemy = null;
-  } else {
-    // Enemy attacks back
-    setTimeout(() => enemyAttack(enemy), 1000);
-    render(text + `Enemy HP: ${enemy.maxHp}`, [
-      { label: "Attack", action: () => playerAttack(enemy) },
-      { label: "Run", action: () => {
-        render("You fled safely back to town.", [
-          { label: "Back to Town", action: startGame }
-        ]);
-      }}
-    ]);
+    dungeonDisplay += "\n";
   }
-}
+  render(`Dungeon Level 1
 
-function enemyAttack(enemy) {
-  let dmg = enemy.atk - getPlayerDef();
-  if(dmg < 1) dmg = 1;
-  player.hp -= dmg;
-  let text = `The ${enemy.name} attacks you for ${dmg} damage!\nYour HP: ${player.hp}/${player.maxHp}`;
-  if(player.hp <= 0) {
-    text += "\nYou have been defeated! Game Over.";
-    render(text, [
-      { label: "Restart", action: () => location.reload() }
-    ]);
-    return;
-  }
-  render(text, [
-    { label: "Attack", action: () => playerAttack(enemy) },
-    { label: "Run", action: () => {
-      render("You fled safely back to town.", [
-        { label: "Back to Town", action: startGame }
-      ]);
-    }}
+Use buttons or arrow keys to move (@ = you)
+Walls = #
+Floor = .
+
+${dungeonDisplay}`, [
+    { label: "Move Up", action: () => moveDungeon(0, -1) },
+    { label: "Move Left", action: () => moveDungeon(-1, 0) },
+    { label: "Move Right", action: () => moveDungeon(1, 0) },
+    { label: "Move Down", action: () => moveDungeon(0, 1) },
+    { label: "Exit Dungeon", action: startGame }
   ]);
 }
 
-function checkLevelUp() {
-  const levelThreshold = player.level * 100;
-  if(player.xp >= levelThreshold) {
-    player.level++;
-    player.maxHp += 20;
-    player.hp = player.maxHp;
-    player.baseAtk += 5;
-    player.baseDef += 2;
-    player.xp = 0;
-    render(`Level Up! You are now level ${player.level}!\nHP, Attack, and Defense increased.`, [
-      { label: "Continue", action: startGame }
-    ]);
+function moveDungeon(dx, dy) {
+  const newX = dungeonPos.x + dx;
+  const newY = dungeonPos.y + dy;
+  if(newX < 0 || newX >= dungeonWidth || newY < 0 || newY >= dungeonHeight) {
+    renderDungeon();
+    return;
+  }
+  if(dungeonMap[newY][newX] === "#") {
+    renderDungeon();
+    return;
+  }
+  dungeonPos.x = newX;
+  dungeonPos.y = newY;
+
+  if(Math.random() < 0.3) {
+    startDungeonBattle();
   } else {
-    startGame();
+    renderDungeon();
   }
 }
 
-// Helper: Shuffle
-function shuffleArray(arr) {
-  return arr
-    .map(v => ({ v, sort: Math.random() }))
-    .sort((a,b) => a.sort - b.sort)
-    .map(({v}) => v);
+function startDungeonBattle() {
+  const dungeonEnemies = enemies.filter(e => e.xp >= 30 && e.name !== "Vorthalon, Starbinder of Endlight");
+  const enemy = JSON.parse(JSON.stringify(dungeonEnemies[Math.floor(Math.random() * dungeonEnemies.length)]));
+  enemy.hp = enemy.maxHp + 10;
+
+  function battleTurn() {
+    let text = `Dungeon Battle: ${player.name} vs ${enemy.name}\n\n`;
+    text += `Your HP: ${player.hp}/${player.maxHp}\nEnemy HP: ${enemy.hp}/${enemy.maxHp}\n\n`;
+    text += enemy.ascii + "\n\n";
+    text += "Choose an action:";
+
+    render(text, [
+      { label: "Attack", action: () => {
+        let playerAtk = getPlayerAtk();
+        let damage = Math.max(playerAtk - enemy.def, 1);
+        enemy.hp -= damage;
+
+        let battleLog = `You hit ${enemy.name} for ${damage} damage.\n`;
+
+        if(enemy.hp <= 0) {
+          player.xp += enemy.xp + 10;
+          player.gold += enemy.gold + 20;
+
+          let loot = [];
+          enemy.lootTable.forEach(id => {
+            if(Math.random() < 0.7) {
+              const item = itemPool.find(i => i.id === id);
+              if(item) loot.push(item);
+            }
+          });
+          loot.forEach(item => player.inventory.push(item));
+
+          player.activeQuests.forEach(q => {
+            if(!q.complete && q.desc.toLowerCase().includes(enemy.name.toLowerCase())) {
+              q.complete = true;
+            }
+          });
+
+          battleLog += `You defeated ${enemy.name}!\nGained ${enemy.xp + 10} XP and ${enemy.gold + 20} gold.\n`;
+          if(loot.length > 0) {
+            battleLog += "You found: " + loot.map(i => i.name).join(", ") + ".\n";
+          }
+
+          if(player.xp >= player.level * 50) {
+            player.level++;
+            player.maxHp += 10;
+            player.hp = player.maxHp;
+            player.baseAtk += 2;
+            player.baseDef += 1;
+            battleLog += `\nYou leveled up to level ${player.level}!\nStats increased! HP restored.`;
+          }
+
+          render(battleLog, [
+            { label: "Continue Dungeon", action: renderDungeon },
+            { label: "Exit Dungeon", action: startGame }
+          ]);
+          return;
+        }
+
+        let enemyAtk = enemy.atk;
+        let damageToPlayer = Math.max(enemyAtk - getPlayerDef(), 1);
+        player.hp -= damageToPlayer;
+        battleLog += `${enemy.name} hits you for ${damageToPlayer} damage.\n`;
+
+        if(player.hp <= 0) {
+          render("You have been defeated in the dungeon! Game Over.", [
+            { label: "Restart Game", action: () => location.reload() }
+          ]);
+          return;
+        }
+
+        render(battleLog, [
+          { label: "Next Turn", action: battleTurn },
+          { label: "Run Away", action: renderDungeon }
+        ]);
+      }},
+      { label: "Run Away", action: renderDungeon }
+    ]);
+  }
+
+  battleTurn();
 }
 
-function startBattle() {
-  // Simple random enemy encounter from enemies list
-  const enemy = enemies[Math.floor(Math.random() * enemies.length)];
-  currentEnemy = JSON.parse(JSON.stringify(enemy)); // copy
-  renderEnemyEncounter(currentEnemy);
-}
+// Keyboard support for dungeon movement
+window.addEventListener("keydown", (e) => {
+  if(gameDiv.innerText.includes("Dungeon Level 1")) {
+    switch(e.key) {
+      case "ArrowUp": e.preventDefault(); moveDungeon(0, -1); break;
+      case "ArrowDown": e.preventDefault(); moveDungeon(0, 1); break;
+      case "ArrowLeft": e.preventDefault(); moveDungeon(-1, 0); break;
+      case "ArrowRight": e.preventDefault(); moveDungeon(1, 0); break;
+    }
+  }
+});
 
+// Start the game
 startGame();
 </script>
-
 </body>
 </html>
