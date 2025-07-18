@@ -34,7 +34,12 @@
 <body>
 <h2>--{ ASCII RPG }--</h2>
 <div id="game"></div>
-
+<script>
+// Mobile compatibility tweak
+if (/Mobi|Android/i.test(navigator.userAgent)) {
+  document.body.style.fontSize = "14px";
+  document.body.style.padding = "5px";
+}
 <script>
 const gameDiv = document.getElementById("game");
 
@@ -56,7 +61,7 @@ const player = {
   activeQuests: []
 };
 
-// Items - 20 different gear & junk
+// Items - Continued with more id 22-28
 const itemPool = [
   // Weapons
   { id: 1, name: "Rusty Sword", type: "weapon", atk: 5, def: 0, sell: 15 },
@@ -65,6 +70,8 @@ const itemPool = [
   { id: 4, name: "Steel Axe", type: "weapon", atk: 15, def: 0, sell: 70 },
   { id: 5, name: "Enchanted Bow", type: "weapon", atk: 18, def: 0, sell: 90 },
   { id: 21, name: "Iron Mace", type: "weapon", atk: 16, def: 2, sell: 60 },
+  { id: 25, name: "Bandit's Cloak", type: "armor", atk: 0, def: 14, sell: 85 },
+  { id: 26, name: "Paladin’s Oath", type: "armor", atk: 0, def: 22, sell: 130 },
   
 
   // Armor
@@ -72,7 +79,7 @@ const itemPool = [
   { id: 7, name: "Chainmail", type: "armor", atk: 0, def: 7, sell: 50 },
   { id: 8, name: "Plate Armor", type: "armor", atk: 0, def: 12, sell: 80 },
   { id: 9, name: "Magic Robes", type: "armor", atk: 0, def: 10, sell: 75 },
-  { id: 10, name: "Dragon Scale Armor", type: "armor", atk: 0, def: 20, sell: 120 },
+  { id: 10, name: "Dragon Scale Armor", type: "armor", atk: 0, def: 20, sell: 320 },
 
   // Junk / Consumables / Misc (sellable only)
   { id: 11, name: "Broken Arrow", type: "junk", atk: 0, def: 0, sell: 5 },
@@ -84,7 +91,9 @@ const itemPool = [
   { id: 17, name: "Golden Necklace", type: "junk", atk: 0, def: 0, sell: 70 },
   { id: 18, name: "Ancient Scroll", type: "junk", atk: 0, def: 0, sell: 60 },
   { id: 19, name: "Gemstone", type: "junk", atk: 0, def: 0, sell: 100 },
-  { id: 20, name: "Cursed Idol", type: "junk", atk: 0, def: 0, sell: 150 }
+  { id: 20, name: "Cursed Idol", type: "junk", atk: 0, def: 0, sell: 150 },
+  { id: 23, name: "Mimic Tongue", type: "junk", atk: 0, def: 0, sell: 90 },
+  { id: 24, name: "Burning Ember", type: "junk", atk: 0, def: 0, sell: 160 },
 ];
 
 // Enemies with ASCII art and loot table references (drop items from itemPool)
@@ -169,6 +178,80 @@ const enemies = [
     xp: 40,
     gold: 65
   },
+  {
+  name: "Shadow Wraith",
+  maxHp: 100,
+  atk: 22,
+  def: 5,
+  ascii: `
+   .-.
+  (o o)
+   |=|
+  /   \\
+  |||||
+ /_____\\`,
+  lootTable: [20, 22], // Cursed Idol, Shadow Fang
+  xp: 75,
+  gold: 80
+},
+{
+  name: "Mimic Chest",
+  maxHp: 80,
+  atk: 17,
+  def: 9,
+  ascii: `
+  _______
+ /       \\
+|  [ ] [] |
+ \\_______/
+  |     |`,
+  lootTable: [23, 3, 16], // Mimic Tongue, Iron Longsword, Silver Ring
+  xp: 60,
+  gold: 45
+},
+{
+  name: "Fire Elemental",
+  maxHp: 110,
+  atk: 25,
+  def: 6,
+  ascii: `
+   (    )
+  (🔥🔥🔥)
+   (    )
+    |||
+   /   \\`,
+  lootTable: [24, 5, 9], // Burning Ember, Enchanted Bow, Magic Robes
+  xp: 85,
+  gold: 100
+},
+{
+  name: "Bandit Rogue",
+  maxHp: 90,
+  atk: 19,
+  def: 7,
+  ascii: `
+   ,--.
+  (o_o )
+  /|  |\\
+  / \\ / \\`,
+  lootTable: [25, 2, 15], // Bandit's Cloak, Sharp Dagger, Potion Flask
+  xp: 70,
+  gold: 60
+},
+{
+  name: "Doomed Paladin",
+  maxHp: 140,
+  atk: 28,
+  def: 14,
+  ascii: `
+  [o_o]
+  /|\\
+ /_|_\\
+  | |`,
+  lootTable: [26, 10, 19], // Paladin’s Oath, Dragon Scale Armor, Gemstone
+  xp: 100,
+  gold: 120
+}
   ];
 
 // Utility Functions
