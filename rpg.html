@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ASCII RPG - Created by cryptictm 2025</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #0f0;
+      font-family: monospace;
+      padding: 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    #main {
+      display: grid;
+      grid-template-columns: 2fr 2fr;
+      gap: 5px;
+      width: 100%;
+      max-width: 1500px;
+    }
+    .card {
+      border: 2px solid #0f0;
+      border-radius: 2px;
+      padding: 12px;
+      background: #000;
+      box-shadow: 0 0 8px #060;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .ascii-art {
+      white-space: pre;
+      text-align: center;
+      margin-bottom: 6px;
+      color: rgba(36, 207, 36, 0.734);
+      font-size: 16px;
+    }
+    button {
+      margin: 4px 0;
+      padding: 6px 12px;
+      background: #020;
+      color: #0f0;
+      border: 1px solid #0f0;
+      border-radius: 18px;
+      cursor: pointer;
+      width: 85%;
+      max-width: 100px;
+    }
+    button:hover {
+      background: #030;
+    }
+    #enemyBox, #log {
+      border: 2px solid #0f0;
+      padding: 25px;
+      height: 120px;
+      overflow-y: auto;
+      background: #000;
+      margin-top: 5px;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 10px;
+      border: 1.5px dashed rgb(52, 142, 162);
+      padding: 10px;
+      min-height: 120px;
+      text-align: center;
+      white-space: pre;
+      font-size: 14px;
+    }
+    #inventory, #shop {
+      margin-top: -10px;
+      border: 1px solid #0f0;
+      padding: 10px;
+      background: #000000;
+      width: 45%;
+      max-width: 1300px;
+    }
+    #inventory h3, #shop h3 {
+      margin-top: 0;
+      text-align: center;
+    }
+    .inventory-grid, .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(65px, 1fr));
+      gap: 10px;
+      font-size: 12px;
+    }
+    .gear-visual {
+      font-size: 16px;
+      white-space: pre;
+      text-align: center;
+      margin-top: 10px;
+      border-top: 1px dashed #0f0;
+      padding-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>ASCII RPG - Update 0.4.9</h1>
+
+  <div id="main">
+    <div class="card">
+      <div class="ascii-art" id="townAscii">
+        _   _                 _   _           _            
+        | | | | ___  __ _ _ __| |_| |__   __ _| | ___ _ __  
+        | |_| |/ _ \/ _` | '__| __| '_ \ / _` | |/ _ \ '_ \ 
+        |  _  |  __/ |_| | |  | |_| | | | |_| | |  __/ | | |
+        |_| |_|\___|\__,_|_|   \__|_| |_|\__, |_|\___|_| |_|
+                                         |___/            
+      </div>
+      <h3>TOWN AREA</h3>
+      <button onclick="tavernJob()">Tavern Job</button>
+      <button onclick="blacksmith()">Blacksmith</button>
+      <button onclick="rest()">Rest</button>
+    </div>
+
+    <div class="card">
+      <div class="ascii-art">    
+ ____  _   _ _   _  ____ _____ ___  _   _ ____  
+|  _ \| | | | \ | |/ ___| ____/ _ \| \ | / ___| 
+| | | | | | |  \| | |  _|  _|| | | |  \| \___ \ 
+| |_| | |_| | |\  | |_| | |__| |_| | |\  |___} |
+|____/ \___/|_| \_|\____|_____\___/|_| \_|____/ 
+      </div>
+      <h3>-</h3>
+      <button onclick="enterDungeon('Rat Caves')">Rat Caves</button>
+      <button onclick="enterDungeon('Old Catacombs')">Old Catacombs</button>
+      <button onclick="enterDungeon('Ashen Rift')">Ashen Rift</button>
+    </div>
+
+    <div class="card">
+      <div class="ascii-art">
+  ____ ____ ____ ____ ____ ____ 
+||C |||O |||M |||B |||A |||T ||
+||__|||__|||__|||__|||__|||__||
+|/__\|/__\|/__\|/__\|/__\|/__\|
+      </div>
+      <h3>-</h3>
+      <button onclick="combat('attack')">Attack</button>
+      <button onclick="combat('spell')">Cast Spell</button>
+      <button onclick="combat('item')">Use Item</button>
+      <button onclick="combat('run')">Run</button>
+      <div id="enemyBox"></div>
+    </div>
+
+    <div class="card">
+      <div class="ascii-art">
+____ ____ ____ ____ ____ ____ 
+||T |||R |||A |||V |||E |||L ||
+||__|||__|||__|||__|||__|||__||
+|/__\|/__\|/__\|/__\|/__\|/__\|  
+      </div>
+      <h3>|</h3>
+      <button onclick="travel('Ashfall')">To Ashfall</button>
+      <button onclick="travel('Hearthglen')">To Hearthglen</button>
+      <button id="challengeVorthalonBtn" onclick="challengeVorthalon()" style="display:none">Challenge Vorthalon</button>
+    </div>
+  </div>
+
+  <div id="log"></div>
+
+  <div id="inventory">
+    <h3>Inventory</h3>
+    <div class="inventory-grid" id="inventoryGrid"></div>
+    <div class="gear-visual" id="gearVisual"></div>
+  </div>
+
+  <div id="shop">
+    <h3>MARKETPLACE</h3>
+    <p style="text-align:center">(Refreshes every 5 minutes)</p>
+    <div class="shop-grid" id="shopGrid"></div>
+  </div>
+
+  <script>
+    let player = {
+      hp: 100,
+      maxHp: 100,
+      gold: 10,
+      town: "Hearthglen",
+      gearLevel: 0,
+      level: 1,
+      xp: 0,
+      inventory: {
+        "Iron Ore": 0,
+        "Leather Scraps": 0,
+        "Arcane Crystal": 0,
+        "Shadow Essence": 0,
+        "Ember Core": 0
+       
+      }
+    };
+
+    let currentEnemy = null;
+    let shopItems = [];
+
+    // Item drop system
+    const itemPool = {
+      // Junk items (common, low value)
+      "Rusty Nail": { value: 1, rarity: "common", type: "junk" },
+      "Broken Glass": { value: 1, rarity: "common", type: "junk" },
+      "Rotten Wood": { value: 2, rarity: "common", type: "junk" },
+      "Dirty Rag": { value: 1, rarity: "common", type: "junk" },
+      "Bent Coin": { value: 3, rarity: "common", type: "junk" },
+      
+      // Basic materials (uncommon, medium value)
+      "Iron Ore": { value: 5, rarity: "uncommon", type: "material" },
+      "Leather Scraps": { value: 4, rarity: "uncommon", type: "material" },
+      "Copper Wire": { value: 6, rarity: "uncommon", type: "material" },
+      "Silver Dust": { value: 8, rarity: "uncommon", type: "material" },
+      
+      // Valuable items (rare, high value)
+      "Arcane Crystal": { value: 15, rarity: "rare", type: "magical" },
+      "Shadow Essence": { value: 12, rarity: "rare", type: "magical" },
+      "Ember Core": { value: 18, rarity: "rare", type: "magical" },
+      "Gold Nugget": { value: 25, rarity: "rare", type: "valuable" },
+      "Ancient Coin": { value: 30, rarity: "rare", type: "valuable" },
+      "Dragon Scale": { value: 50, rarity: "epic", type: "valuable" },
+
+      // Boss-only weapons (Vorthalon)
+      "Starbinder's Edge": { value: 120, rarity: "rare", type: "boss_weapon" },
+      "Celestial Halberd": { value: 140, rarity: "rare", type: "boss_weapon" },
+      "Aetheric Longbow": { value: 130, rarity: "rare", type: "boss_weapon" },
+      "Singularity Mace": { value: 150, rarity: "rare", type: "boss_weapon" },
+      "Chrono Dagger": { value: 110, rarity: "rare", type: "boss_weapon" }
+    };
+
+    const townAsciiArt = {
+      "Hearthglen": `
+    --   TOWN OF  HEARTHGLEN --
+  |_|  |_|\__,_|_| |_|\__,_|\___|_| |_|\__,_|
+      `,
+      "Ashfall": `
+TOWN OF
+     /\\
+     /  \\    _   _  ___  _   _ _ 
+    / /\\ \\ S  | | |H |/ _F \\|A| L| L| |
+   / ____ \\ | (_) | |_| | |
+  /_/    \\_\
+                             
+                             
+      `
+    };
+
+    const enemyAscii = {
+      "Mutated Rat": `
+     (\--._            
+     (   \--._..--._  
+     /  /○\              )\{} 
+    (    .-.-;"\\      | 
+     \\《_/\\_.-'_.-'\\    | 
+          \--'     \----'`,
+      "Small Rat": `
+     (\\_./) 
+     (o.o ) 
+     > ^ <`,
+      "Rat Gang": `
+    (\\_._/) (\\_._/) (\\_._/) 
+    ( o.o ) ( o.o ) ( o.o ) 
+    (> ^ <) (> ^ <) (> ^ <)`,
+      "Skeleton": `
+      .-.
+     (o.o) 
+      |=|  
+     __|__ 
+   //.=|=.\\\\
+  // .=|=. \\\\
+  \\\\ .=|=. //`,
+      "Ghoul": `
+   .-"      "-.
+  /            \\
+ |,  .-.  .-.  ,|
+ | )(_o/  \\o_)( |
+ |/     /\\     \\|
+ (_     ^^     _)
+  \\__|IIIIII|__/`,
+      "Necromancer": `
+      /^\\
+     /   \\    □
+    /#  | # \\ |
+   /   |   \\  |
+  /    |    \\ |
+  |  (   )  | |||
+  |   | |   |  |
+  | %%  | |  %% |
+   \\__|_|__/  □
+   #@      @# `,
+      "Fire Imp": `
+     🔥    🔥
+    € (    )€
+    ( ¤ (  ¤ )
+   €( (   )  )€
+      )V__V (  ¡
+     (  vv  )   -
+      (   )
+       ( )`,
+      "Lava Serpent": `
+    /^\\/^\\
+    ,-   |,-:
+   _|O__| O|:
+ / ''   /~ \\ :
+ \__;~*;__|___/
+    ;~; \\   \\     
+   ;~*;  \\   \\
+   kVk    \\    \\\\\\
+        #^🔥#^#^🔥#^#^#🔥^#🔥^#^#`,
+      "Ash Golem": `
+          ___
+         _[_|_/]]|_
+        (  &  &   )
+       /|  .  |-\
+      / |     | -\
+      ●  |     |  ●
+         '-----'`,
+      "Goblin": `
+       (------;_),-.
+     |~-(),()/_/
+       (,___,)
+      ,-/&&|-,___
+     / /).:. ('--._)
+    {_[ (_,_)
+        | Y |
+       /  |  }
+       """ """ `,
+      "Giant Rat": `
+        /\\___/\\
+       (  o o  )
+       (  =^=  ) 
+        (______)
+         |  |  |
+         |  |  |
+        _|  |  |_`,
+      "Rat Gang(B)": `
+      /\\___/\\  /\\___/\\  /\\___/\\
+     (  o o  )(  o o  )(  o o  )
+     (  =^=  ) (  =^=  ) (  =^=  ) 
+      (______)  (______)  (______)
+         |  |      |  |      |  |
+         |  |      |  |      |  |
+        _|  |_    _|  |_    _|  |_`,
+      "Zombie": `
+        .-.
+       (X.X)
+        |=|
+       __|__
+      /  |  \
+     /   |   \
+    /____|____\\`,
+    "Doomed Paladin": `_,.
+    ,\` -.)
+   ( _/-\\-._
+  /,|\`--._,-^|            ,
+  \\_| |\`-._/||          ,'|
+    |  \`-, / |         /  /
+    |     || |        /  /
+     \`r-._||/   __   /  /
+ __,-<_     )\`-/  \`./  /
+'  \\   \`---'   \\   /  /
+    |           |./  /
+    /           //  /
+\\_/' \\         |/  /
+ |    |   _,^-'/  /
+ |    , \`\`  (\\/  /_
+  \\,.->._    \\X-=/^
+  (  /   \`-._//^\`
+   \`Y-.____(__}
+    |     {__)
+          (),`,
+      "Wraith": `
+      .-""""""-.
+     /          \\
+    |  (  ) (  ) |
+    |  :\\  / :  |
+     \\   \\/   /
+      '-......-'`,
+      "Void Cat Knight": `
+        /\\___/\\
+       |  x x  |
+       |  =^=  |
+        |_888__|
+       /|     |\\
+      / |     | \\
+     /  |     |  \\
+    /___|_____|___\\`,
+      "Shadow Beast": `
+        /\\___/\\
+       (-------)
+       (  * *  )
+       (9 =%= 9 ) 
+        (_^__^__)
+         |  |  |
+         |  |  |
+        _|  |  |_
+       /  /   \\  \\
+      /  /     \\  \\
+     /__/       \\__\\`,
+      "Magma Elemental": `
+        /\\___/\\
+       (  🔥🔥  )
+       (  9 =^= 9 ) 
+        (________)
+       [[|  |  |]]
+         |  |  |
+        _|  |  |_
+       /  /   \\  \\
+      /  /     \\  \\
+     /__/       \\__\\`,
+      "Phoenix": ` _,="( _  )"=,_
+_,' 🔥   \_>\_/ 🔥   ',_
+.7,🔥     {  }    🔥 ,\.
+ '/:,  .m  m.  ,:\'
+   ')",(/  \),"('
+      '{'!!'}'`,
+      "Crystal Golem": `
+        /\\___/\\
+       (  💎💎  )
+       (  &  &  ) 
+        (______)
+         |  |  |
+         |  |  |
+        _|  |  |_
+       /  /   \\  \\
+      /  /     \\  \\
+     /__/       \\__\\`,
+      "Skitterspawn": `
+         \\     /
+  --- (o o) ---
+     / \\_/ \\`,
+      "Angry Leeroy": `
+  [o'_'o]
+      :-:
+       |/|\\
+       | |---|===-ffff>
+       |\
+      / \ `,
+      "Vorthalon, Starbinder of Endlight": `
+         ____====-_  _-====____
+            _--^^^#####//      \\\\#####^^^--_
+         _-^##########// (    ) \\\\##########^-_
+        -############//  |\\^^/|  \\\\############-
+      _/############//   (@::@)   \\\\############\\_
+     /#############((     \\\\//     ))#############\\
+    -###############\\\\    (oo)    //###############-
+   -#################\\\\  / UUU \\  //#################-
+  -##/|###############\\\\/  (_)  \\\\//###############|\\##-
+  |/ |#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\#/\| \\|
+  || |                      █                       | ||
+  || |       Vorthalon, Starbinder of Endlight      | ||
+  \\_|________________________________________________|_/
+`
+     };
+
+    function log(message) {
+      const logBox = document.getElementById('log');
+      logBox.innerHTML += message + '<br>';
+      logBox.scrollTop = logBox.scrollHeight;
+      updateInventory();
+    }
+
+    function updateInventory() {
+      const invBox = document.getElementById("inventoryGrid");
+      invBox.innerHTML = "";
+      for (let item in player.inventory) {
+        invBox.innerHTML += item + ": " + player.inventory[item] + "<br>";
+      }
+      invBox.innerHTML += "Gold: " + player.gold + "<br>";
+      invBox.innerHTML += "HP: " + player.hp + "/" + player.maxHp + "<br>";
+      invBox.innerHTML += "Level: " + player.level + " (XP: " + player.xp + ")<br>";
+      invBox.innerHTML += "Gear Level: +" + player.gearLevel;
+      updateGearVisual();
+    }
+
+    function updateGearVisual() {
+      const visual = [
+        " [ ]   -- Ragged Clothes -- ",
+        " [#]   -- Iron Gear -- ",
+        " [##]  -- Reinforced Gear -- ",
+        " [###] -- Masterwork Gear -- ",
+        " [####] -- Fully upgraded Gear (will add more after next update)"
+      ];
+      document.getElementById("gearVisual").textContent = visual[player.gearLevel];
+    }
+
+    function tavernJob() {
+      if (player.town === "Hearthglen") {
+        player.gold += 5;
+        player.inventory["Iron Ore"]++;
+        log("Worked in Hearthglen Tavern: +5 gold, +1 Iron Ore.");
+      } else if (player.town === "Ashfall") {
+        player.gold += 18;
+        player.inventory["Shadow Essence", "Leather Scraps"]++;
+        log("Worked in Ashfall Tavern: +8 gold, +1 Shadow Essence +1 Leather Scraps");
+      }
+    }
+
+    function blacksmith() {
+      const mats = ["Iron Ore","Leather Scraps","Arcane Crystal","Shadow Essence","Ember Core"];
+      const needed = mats[player.gearLevel];
+      if (player.gold >= 10 && player.gearLevel < 3 && player.inventory[needed] > 0) {
+        player.gold -= 20;
+        player.inventory[needed]--;
+        player.gearLevel++;
+        log("Blacksmith upgraded your gear to +" + player.gearLevel + "!");
+      } else if (player.gearLevel >= 3) {
+        log("Your gear is already maxed out!");
+      } else {
+        log("Need 20 gold and 1 " + needed + " to upgrade.");
+      }
+    }
+
+    function rest() {
+      player.hp = player.maxHp;
+      log("You rest at the inn and recover to full health.");
+    }
+
+    function updateVorthalonButtonVisibility() {
+      const btn = document.getElementById('challengeVorthalonBtn');
+      if (!btn) return;
+      const canChallenge = player.town === 'Ashfall' && player.level >= 15;
+      btn.style.display = canChallenge ? 'inline-block' : 'none';
+    }
+
+    function challengeVorthalon() {
+      if (player.town !== 'Ashfall' || player.level < 15) {
+        log("You sense a presence, but you are not yet ready.");
+        return;
+      }
+      const enemy = "Vorthalon, Starbinder of Endlight";
+      currentEnemy = { name: enemy, hp: 200, dungeon: 'Ashen Rift' };
+      log("You challenge " + enemy + "! HP: " + currentEnemy.hp);
+      document.getElementById("enemyBox").textContent = enemyAscii[enemy] || "";
+    }
+
+    function calculateDrop(dungeonName, playerLevel) {
+      const drops = [];
+      const dropChance = Math.random();
+      
+      // Base drop rates based on dungeon difficulty
+      let baseChance = 0.3; // 30% base chance
+      if (dungeonName === "Old Catacombs") baseChance = 0.4;
+      if (dungeonName === "Ashen Rift") baseChance = 0.5;
+      
+      // Level bonus increases drop chance
+      const levelBonus = playerLevel * 0.02; // +2% per level
+      const totalChance = Math.min(0.8, baseChance + levelBonus);
+      
+      if (dropChance <= totalChance) {
+        // Determine item rarity based on dungeon and level
+        let rarityChance = Math.random();
+        let itemRarity = "common";
+        
+        if (dungeonName === "Rat Caves") {
+          if (rarityChance > 0.8 && playerLevel >= 5) itemRarity = "rare";
+          else if (rarityChance > 0.6) itemRarity = "uncommon";
+        } else if (dungeonName === "Old Catacombs") {
+          if (rarityChance > 0.7 && playerLevel >= 10) itemRarity = "rare";
+          else if (rarityChance > 0.5) itemRarity = "uncommon";
+        } else if (dungeonName === "Ashen Rift") {
+          if (rarityChance > 0.6 && playerLevel >= 15) itemRarity = "epic";
+          else if (rarityChance > 0.4) itemRarity = "rare";
+          else if (rarityChance > 0.2) itemRarity = "uncommon";
+        }
+        
+        // Filter items by rarity
+        const availableItems = Object.keys(itemPool).filter(item => 
+          itemPool[item].rarity === itemRarity
+        );
+        
+        if (availableItems.length > 0) {
+          const selectedItem = availableItems[Math.floor(Math.random() * availableItems.length)];
+          drops.push(selectedItem);
+        }
+      }
+      
+      return drops;
+    }
+
+    function calculateVorthalonDrops(playerLevel) {
+      const drops = [];
+      // Always at least one uncommon item
+      const uncommonItems = Object.keys(itemPool).filter(k => itemPool[k].rarity === 'uncommon');
+      if (uncommonItems.length > 0) {
+        const u = uncommonItems[Math.floor(Math.random() * uncommonItems.length)];
+        drops.push(u);
+      }
+      // 50% chance to add a second uncommon
+      if (Math.random() < 0.5 && uncommonItems.length > 0) {
+        const u2 = uncommonItems[Math.floor(Math.random() * uncommonItems.length)];
+        drops.push(u2);
+      }
+      // Chance for one boss weapon
+      const bossWeapons = Object.keys(itemPool).filter(k => itemPool[k].type === 'boss_weapon');
+      // Base 20% + 1% per level over 15 (caps at 40%)
+      const weaponChance = Math.min(0.4, 0.2 + Math.max(0, playerLevel - 15) * 0.01);
+      if (Math.random() < weaponChance && bossWeapons.length > 0) {
+        const w = bossWeapons[Math.floor(Math.random() * bossWeapons.length)];
+        drops.push(w);
+      }
+      return drops;
+    }
+
+    function enterDungeon(name) {
+      log("You enter the " + name + "...");
+      let enemies;
+      if (name === "Rat Caves") {
+        enemies = ["Mutated Rat", "Small Rat", "Rat Gang", "Giant Rat", "Rat Gang(B)", "Skitterspawn"];
+      } else if (name === "Old Catacombs") {
+        enemies = ["Skeleton", "Ghoul", "Necromancer", "Goblin", "Zombie", "Wraith", "Void Cat Knight", "Shadow Beast", "Angry Leeroy"];
+      } else if (name === "Ashen Rift") {
+        enemies = ["Fire Imp", "Lava Serpent", "Doomed Paladin", "Ash Golem", "Magma Elemental", "Phoenix", "Crystal Golem"];
+      }
+      const enemy = enemies[Math.floor(Math.random() * enemies.length)];
+      currentEnemy = { name: enemy, hp: 30 + player.level * 5, dungeon: name };
+      log("A " + enemy + " appears! HP: " + currentEnemy.hp);
+      document.getElementById("enemyBox").textContent = enemyAscii[enemy] || "";
+    }
+
+    function combat(action) {
+      if (!currentEnemy) {
+        log("No enemy to fight.");
+        return;
+      }
+      if (action === "attack") {
+        let dmg = 5 + player.gearLevel * 2;
+        currentEnemy.hp -= dmg;
+        log("You attack the " + currentEnemy.name + " for " + dmg + " dmg!");
+      }
+      if (action === "spell") {
+        if (player.inventory["Ember Core"] > 0) {
+          let dmg = 15;
+          currentEnemy.hp -= dmg;
+          log("You cast a spell for " + dmg + " dmg!");
+        } else {
+          log("You don't have any Ember Cores to cast a spell.");
+        }
+      }
+      if (action === "item") {
+        if (player.inventory["Arcane Crystal"] > 0) {
+          player.inventory["Arcane Crystal"]--;
+          player.hp = Math.min(player.maxHp, player.hp + 20);
+          log("You use an Arcane Crystal to restore 20 HP.");
+        } else {
+          log("No healing items.");
+        }
+      }
+      if (action === "run") {
+        log("You fled the battle.");
+        currentEnemy = null;
+        document.getElementById("enemyBox").textContent = "";
+        return;
+      }
+
+      if (currentEnemy && currentEnemy.hp <= 0) {
+        log("You defeated the " + currentEnemy.name + "!");
+        player.xp += 10;
+        player.gold += 5;
+        log("+10 XP, +5 gold.");
+        
+        // Calculate item drops (boss vs normal)
+        const drops = currentEnemy.name === "Vorthalon, Starbinder of Endlight"
+          ? calculateVorthalonDrops(player.level)
+          : calculateDrop(currentEnemy.dungeon, player.level);
+        if (drops.length > 0) {
+          drops.forEach(item => {
+            if (!player.inventory[item]) {
+              player.inventory[item] = 0;
+            }
+            player.inventory[item]++;
+            log("Found: " + item + " (Value: " + itemPool[item].value + "g)");
+          });
+        }
+        
+        if (player.xp >= player.level * 20) {
+          player.level++;
+          log("Level up! You are now level " + player.level);
+          updateVorthalonButtonVisibility();
+        }
+        currentEnemy = null;
+        document.getElementById("enemyBox").textContent = "";
+      } else {
+        let dmg = 5;
+        player.hp -= dmg;
+        log("The " + currentEnemy.name + " hits you for " + dmg + " dmg. HP: " + player.hp);
+        if (player.hp <= 0) {
+          log("You have been defeated...Heading back to Town");
+          player.hp = player.maxHp;
+          player.gold = Math.max(0, player.gold - 5);
+          currentEnemy = null;
+          document.getElementById("enemyBox").textContent = "";
+        }
+      }
+    }
+
+    function travel(destination) {
+      if (destination === "Ashfall" && player.level < 15) {
+        log("Ashfall is too dangerous until you reach level 15!");
+        return;
+      }
+      player.town = destination;
+      document.getElementById("townAscii").textContent = townAsciiArt[destination];
+      log("You travel to " + destination + ".");
+      updateVorthalonButtonVisibility();
+    }
+
+    // --- Shop system ---
+    function refreshShop() {
+      const allItems = Object.keys(itemPool).filter(k => itemPool[k].type !== 'boss_weapon');
+      shopItems = [];
+      for (let i = 0; i < 4; i++) {
+        const item = allItems[Math.floor(Math.random() * allItems.length)];
+        const basePrice = itemPool[item].value;
+        const price = Math.floor(basePrice * (0.8 + Math.random() * 0.4)); // 80-120% of base value
+        shopItems.push({ name: item, price });
+      }
+      updateShop();
+    }
+
+    function updateShop() {
+      const shopBox = document.getElementById("shopGrid");
+      shopBox.innerHTML = "";
+      shopItems.forEach((item, idx) => {
+        shopBox.innerHTML += `
+          <div>
+            ${item.name} - ${item.price}g 
+            <button onclick="buyItem(${idx})">Buy</button>
+            <button onclick="sellItem('${item.name}', ${item.price})">Sell</button>
+          </div>`;
+      });
+    }
+
+    function buyItem(index) {
+      const item = shopItems[index];
+      if (player.gold >= item.price) {
+        player.gold -= item.price;
+        player.inventory[item.name]++;
+        log("Bought 1 " + item.name + " for " + item.price + " gold.");
+      } else {
+        log("Not enough gold!");
+      }
+    }
+
+    function sellItem(name, price) {
+      if (player.inventory[name] > 0) {
+        player.inventory[name]--;
+        const sellPrice = itemPool[name] ? Math.floor(itemPool[name].value * 0.6) : Math.floor(price / 2);
+        player.gold += sellPrice;
+        log("Sold 1 " + name + " for " + sellPrice + " gold.");
+      } else {
+        log("You don't have any " + name + " to sell.");
+      }
+    }
+
+    // Refresh shop every 5 minutes
+    refreshShop();
+    setInterval(refreshShop, 300000);
+
+    updateInventory();
+    updateVorthalonButtonVisibility();
+  </script>
+</body>
+</html>
