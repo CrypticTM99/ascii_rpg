@@ -123,7 +123,17 @@
   </style>
 </head>
 <body>
-  <h1>ASCII RPG - Update 0.4.9</h1>
+  <div style="position:fixed; top:6px; right:8px; z-index:10">
+    <button id="saveMenuBtn" onclick="toggleSaveMenu()" style="width:auto;max-width:none;padding:4px 8px">⋮</button>
+    <div id="saveMenu" style="display:none; position:absolute; right:0; margin-top:4px; background:#000; border:1px solid #0f0; padding:6px; min-width:220px">
+      <div style="text-align:center;margin-bottom:4px"><b>Save/Load</b></div>
+      <div id="saveSlots"></div>
+      <div style="text-align:center;margin-top:6px">
+        <button onclick="closeSaveMenu()" style="max-width:none">Close</button>
+      </div>
+    </div>
+  </div>
+  <h1>ASCII RPG - Update 0.5.1</h1>
 
   <div id="main">
     <div class="card">
@@ -141,6 +151,7 @@
       <button onclick="rest()">Rest</button>
       <button onclick="toggleQuestBoard()">Quest Board</button>
       <button onclick="toggleSkillTree()">Skill Tree</button>
+      <button id="arenaBtn" onclick="toggleArena()" style="display:none">Ashfall Arena</button>
     </div>
 
     <div class="card">
@@ -240,11 +251,34 @@ ____ ____ ____ ____ ____ ____
     </div>
   </div>
   
+  <div class="card" id="arenaCard" style="display:none; margin-top:8px; width:100%; max-width:1300px;">
+    <div class="ascii-art">
+      _    ____  _____ _   _    _    
+      / \  |  _ \| ____| \ | |  / \   
+     / _ \ | |_) |  _| |  \| | / _ \  
+    / ___ \|  _ <| |___| |\  |/ ___ \ 
+   /_/   \_\_| \_\_____|_| \_/_/   \_\
+      
+    </div>
+    <h3>Ashfall Arena</h3>
+    <div id="arenaStatus" style="text-align:center;margin-bottom:6px"></div>
+    <div id="arenaActions" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
+  </div>
 
-  <div id="inventory">
+  <div id="inventory" style="position:relative">
     <h3>Inventory</h3>
     <div class="inventory-grid" id="inventoryGrid"></div>
     <div class="gear-visual" id="gearVisual"></div>
+    <div style="text-align:center;margin-top:6px">
+      <button id="equipBtn" onclick="toggleEquipmentWindow()" style="max-width:none;width:auto">Equipment</button>
+    </div>
+    <div id="equipmentPanel" style="display:none; position:absolute; top:8px; right:-260px; width:240px; border:1px solid #0f0; background:#000; padding:8px; box-shadow:0 0 8px #060; z-index:5">
+      <div style="text-align:center;margin-bottom:6px"><b>Equipment</b></div>
+      <div id="equipmentPanelBody" style="font-size:12px"></div>
+      <div style="text-align:center;margin-top:6px">
+        <button onclick="toggleEquipmentWindow()" style="max-width:none;width:auto">Close</button>
+      </div>
+    </div>
   </div>
 
   <div id="shop">
@@ -269,6 +303,9 @@ ____ ____ ____ ____ ____ ____
         "Shadow Essence": 0,
         "Ember Core": 0
        
+      },
+      equipment: {
+        weapon: null
       }
     };
 
@@ -288,6 +325,15 @@ ____ ____ ____ ____ ____ ____
       power: 0,
       focus: 0,
       vitality: 0
+    };
+
+    // Arena system state
+    let arena = {
+      rep: 0,
+      unlocked: false,
+      inArena: false,
+      mode: null, // 'duel' | 'waves' | null
+      wave: 0
     };
 
     // Item drop system
@@ -319,6 +365,10 @@ ____ ____ ____ ____ ____ ____
       "Spider Silk": { value: 12, rarity: "uncommon", type: "material" },
       "Cave Moss": { value: 6, rarity: "common", type: "material" },
       "Runed Shard": { value: 20, rarity: "rare", type: "magical" },
+
+      // Arena exclusive rewards
+      "Arena Token": { value: 22, rarity: "uncommon", type: "arena" },
+      "Champion's Laurel": { value: 60, rarity: "rare", type: "arena" },
 
       // Boss-only weapons (Vorthalon)
       "Starbinder's Edge": { value: 120, rarity: "rare", type: "boss_weapon" },
@@ -398,14 +448,14 @@ TOWN OF
       (   )
        ( )`,
       "Lava Serpent": `
-    /^\\/^\\
+    /^\/^\
     ,-   |,-:
    _|O__| O|:
- / ''   /~ \\ :
+ / ''   /~ \ :
  \__;~*;__|___/
-    ;~; \\   \\     
-   ;~*;  \\   \\
-   kVk    \\    \\\\\\
+    ;~; \   \     
+   ;~*;  \   \
+   kVk    \    \\\
         #^🔥#^#^🔥#^#^#🔥^#🔥^#^#`,
       "Ash Golem": `
           ___
@@ -415,6 +465,28 @@ TOWN OF
       / |     | -\
       ●  |     |  ●
          '-----'`,
+      "Gladiator Brutus": `
+      __
+   _ /__\ _
+  ( '_  _' )
+   |  \/  |   ====
+   | |\/| |  |____|
+   |_|  |_|   /  \
+    BRUTUS`,
+      "Gladiator Nyx": `
+    .-.
+   (o_o)  <{==* 
+    | |\
+   _| |_\
+  /_____/
+    NYX`,
+      "Arena Crusher": `
+     _____
+   _|_   _|_
+  / _ \ / _ \
+ | |_| | |_| |
+  \___/ \___/
+   [CRUSH]`,
       "Goblin": `
        (------;_),-.
      |~-(),()/_/
@@ -550,7 +622,18 @@ _,' 🔥   \_>\_/ 🔥   ',_
   || |                      █                       | ||
   || |       Vorthalon, Starbinder of Endlight      | ||
   \\_|________________________________________________|_/
-`
+`,
+      "Cave Stalker": `[o'_'o]
+      :-:
+      :|/|\\ 99---|--|===-ffff>
+      =--:[|34=56|---|===-ffff>
+      | "|\
+     :<- / \ `,
+     "Ruined Spider": `\_______/
+    {}
+\_\(e_r)/_/
+ _//"\\_
+  /   \ `
      };
 
     function log(message) {
@@ -579,16 +662,24 @@ _,' 🔥   \_>\_/ 🔥   ',_
     }
 
     function updateGearVisual() {
-      const visual = [
-        " [ ]   -- Ragged Clothes -- ",
-        " [#]   -- Iron Gear -- ",
-        " [##]  -- Reinforced Gear -- ",
-        " [###] -- Masterwork Gear -- ",
-        " [####] -- Fully upgraded Gear (will add more after next update)"
-      ];
-      document.getElementById("gearVisual").textContent = visual[player.gearLevel];
+      const el = document.getElementById("gearVisual");
+      const armorTier = player.gearLevel;
+      const armorLabel = ["Ragged Clothes","Iron Gear","Reinforced Gear","Masterwork Gear","Fully upgraded Gear"][armorTier];
+      const weapon = player.equipment.weapon ? player.equipment.weapon : "None";
+      const ascii = [
+        "   O   ",
+        "  /|\\  ",
+        "  / \\  "
+      ].join("\n");
+      el.innerHTML = `
+        <div style="white-space:pre;text-align:center">${ascii}</div>
+        <div style="margin-top:4px">Armor: <b>${armorLabel}</b></div>
+        <div>Weapon: <b>${weapon}</b></div>
+      `;
       // Update quests panel too if open
       renderQuestList();
+      const ep = document.getElementById('equipmentPanel');
+      if (ep && ep.style.display !== 'none') renderEquipmentWindow();
     }
 
     function tavernJob() {
@@ -598,8 +689,11 @@ _,' 🔥   \_>\_/ 🔥   ',_
         log("Worked in Hearthglen Tavern: +5 gold, +1 Iron Ore.");
         updateQuestProgressOnCollect("Iron Ore");
       } else if (player.town === "Ashfall") {
-        player.gold += 18;
-        player.inventory["Shadow Essence", "Leather Scraps"]++;
+        player.gold += 8;
+        if (!player.inventory["Shadow Essence"]) player.inventory["Shadow Essence"] = 0;
+        if (!player.inventory["Leather Scraps"]) player.inventory["Leather Scraps"] = 0;
+        player.inventory["Shadow Essence"]++;
+        player.inventory["Leather Scraps"]++;
         log("Worked in Ashfall Tavern: +8 gold, +1 Shadow Essence +1 Leather Scraps");
         updateQuestProgressOnCollect("Shadow Essence");
         updateQuestProgressOnCollect("Leather Scraps");
@@ -609,7 +703,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
     function blacksmith() {
       const mats = ["Iron Ore","Leather Scraps","Arcane Crystal","Shadow Essence","Ember Core"];
       const needed = mats[player.gearLevel];
-      if (player.gold >= 10 && player.gearLevel < 3 && player.inventory[needed] > 0) {
+      if (player.gold >= 20 && player.gearLevel < 3 && player.inventory[needed] > 0) {
         player.gold -= 20;
         player.inventory[needed]--;
         player.gearLevel++;
@@ -764,9 +858,14 @@ _,' 🔥   \_>\_/ 🔥   ',_
     }
     function updateVorthalonButtonVisibility() {
       const btn = document.getElementById('challengeVorthalonBtn');
-      if (!btn) return;
-      const canChallenge = player.town === 'Ashfall' && player.level >= 15;
-      btn.style.display = canChallenge ? 'inline-block' : 'none';
+      const arenaBtn = document.getElementById('arenaBtn');
+      if (btn) {
+        const canChallenge = player.town === 'Ashfall' && player.level >= 15;
+        btn.style.display = canChallenge ? 'inline-block' : 'none';
+      }
+      if (arenaBtn) {
+        arenaBtn.style.display = player.town === 'Ashfall' ? 'inline-block' : 'none';
+      }
     }
 
     function challengeVorthalon() {
@@ -775,9 +874,10 @@ _,' 🔥   \_>\_/ 🔥   ',_
         return;
       }
       const enemy = "Vorthalon, Starbinder of Endlight";
-      currentEnemy = { name: enemy, hp: 200, dungeon: 'Ashen Rift' };
+      currentEnemy = { name: enemy, hp: 200, dungeon: 'Ashen Rift', arena: false, defeated: false };
       log("You challenge " + enemy + "! HP: " + currentEnemy.hp);
       document.getElementById("enemyBox").textContent = enemyAscii[enemy] || "";
+      inCombat = true;
       // Quest progress for accepting the challenge counts as a killNamed only on defeat
     }
 
@@ -894,14 +994,15 @@ _,' 🔥   \_>\_/ 🔥   ',_
         enemies = enemies.concat(hearthglenTier2);
       }
       const enemy = enemies[Math.floor(Math.random() * enemies.length)];
-      currentEnemy = { name: enemy, hp: 30 + player.level * 5, dungeon: name };
+      currentEnemy = { name: enemy, hp: 30 + player.level * 5, dungeon: name, arena: false, defeated: false };
       log("A " + enemy + " appears! HP: " + currentEnemy.hp);
       document.getElementById("enemyBox").textContent = enemyAscii[enemy] || "";
       inCombat = true;
     }
 
     function combat(action) {
-      if (!currentEnemy) {
+      // strict guard: no actions when no valid target or already defeated
+      if (!currentEnemy || !inCombat || currentEnemy.hp <= 0 || currentEnemy.defeated) {
         log("No enemy to fight.");
         return;
       }
@@ -930,32 +1031,37 @@ _,' 🔥   \_>\_/ 🔥   ',_
         }
       }
       if (action === "run") {
-        log("You fled the battle.");
-        currentEnemy = null;
-        document.getElementById("enemyBox").textContent = "";
-        inCombat = false;
-        return;
+        if (arena.inArena) {
+          log("You cannot flee the arena!");
+        } else {
+          log("You fled the battle.");
+          currentEnemy = null;
+          document.getElementById("enemyBox").textContent = "";
+          inCombat = false;
+          return;
+        }
       }
 
-      if (currentEnemy && currentEnemy.hp <= 0) {
+      if (currentEnemy && currentEnemy.hp <= 0 && !currentEnemy.defeated) {
+        // mark defeated and clear ASCII immediately to prevent spam
+        currentEnemy.defeated = true;
+        inCombat = false;
+        document.getElementById("enemyBox").textContent = "";
         log("You defeated the " + currentEnemy.name + "!");
         updateQuestProgressOnKill(currentEnemy.name);
         player.xp += 10;
         player.gold += 5;
         log("+10 XP, +5 gold.");
         
-        // Calculate item drops (boss vs normal)
-        const drops = currentEnemy.name === "Vorthalon, Starbinder of Endlight"
-          ? calculateVorthalonDrops(player.level)
-          : calculateDrop(currentEnemy.dungeon, player.level);
-        if (drops.length > 0) {
-          drops.forEach(item => {
-            if (!player.inventory[item]) {
-              player.inventory[item] = 0;
-            }
-            player.inventory[item]++;
-            log("Found: " + item + " (Value: " + itemPool[item].value + "g)");
-          });
+        // Arena vs Boss vs Normal rewards
+        if (currentEnemy.name === "Vorthalon, Starbinder of Endlight") {
+          const drops = calculateVorthalonDrops(player.level);
+          grantDrops(drops);
+        } else if (currentEnemy.arena) {
+          handleArenaWin();
+        } else {
+          const drops = calculateDrop(currentEnemy.dungeon, player.level);
+          grantDrops(drops);
         }
         
         if (player.xp >= player.level * 20) {
@@ -965,10 +1071,10 @@ _,' 🔥   \_>\_/ 🔥   ',_
           awardSkillPointOnLevel();
         }
         currentEnemy = null;
-        document.getElementById("enemyBox").textContent = "";
-        inCombat = false;
       } else {
-        let dmg = 5;
+        let base = 5;
+        if (currentEnemy && currentEnemy.arena) base = Math.max(6, 4 + arena.wave * 2);
+        let dmg = base;
         player.hp -= dmg;
         log("The " + currentEnemy.name + " hits you for " + dmg + " dmg. HP: " + player.hp);
         if (player.hp <= 0) {
@@ -978,6 +1084,12 @@ _,' 🔥   \_>\_/ 🔥   ',_
           currentEnemy = null;
           document.getElementById("enemyBox").textContent = "";
           inCombat = false;
+          if (arena.inArena) {
+            arena.inArena = false;
+            arena.mode = null;
+            arena.wave = 0;
+            renderArenaUI();
+          }
         }
       }
     }
@@ -995,6 +1107,8 @@ _,' 🔥   \_>\_/ 🔥   ',_
       if (activeQuest && activeQuest.type === 'travel' && activeQuest.town === destination) {
         completeActiveQuest();
       }
+      // Arena panel re-render if visible
+      renderArenaUI();
     }
 
     // --- Shop system ---
@@ -1068,9 +1182,11 @@ _,' 🔥   \_>\_/ 🔥   ',_
       const item = shopItems[index];
       if (player.gold >= item.price) {
         player.gold -= item.price;
+        if (!player.inventory[item.name]) player.inventory[item.name] = 0;
         player.inventory[item.name]++;
         log("Bought 1 " + item.name + " for " + item.price + " gold.");
         updateQuestProgressOnCollect(item.name);
+        updateInventory();
       } else {
         log("Not enough gold!");
       }
@@ -1083,12 +1199,299 @@ _,' 🔥   \_>\_/ 🔥   ',_
         player.gold += sellPrice;
         log("Sold 1 " + name + " for " + sellPrice + " gold.");
         // Selling doesn't count as collecting; no quest progress here
+        updateInventory();
       } else {
         log("You don't have any " + name + " to sell.");
       }
     }
 
-    // Refresh shop every 5 minutes
+    // --- Shared drop grant helper ---
+    function grantDrops(drops) {
+      if (drops && drops.length > 0) {
+        drops.forEach(item => {
+          if (!player.inventory[item]) {
+            player.inventory[item] = 0;
+          }
+          player.inventory[item]++;
+          log("Found: " + item + " (Value: " + (itemPool[item] ? itemPool[item].value : '?') + "g)");
+        });
+      }
+      updateInventory();
+    }
+
+    // --- Arena UI and logic ---
+    function toggleArena() {
+      const card = document.getElementById('arenaCard');
+      const show = card.style.display === 'none' || card.style.display === '';
+      card.style.display = show ? 'block' : 'none';
+      renderArenaUI();
+    }
+
+    function renderArenaUI() {
+      const status = document.getElementById('arenaStatus');
+      const actions = document.getElementById('arenaActions');
+      if (!status || !actions) return;
+      if (player.town !== 'Ashfall') {
+        status.textContent = "You must be in Ashfall to enter the Arena.";
+        actions.innerHTML = "";
+        return;
+      }
+      const need = 20;
+      arena.unlocked = arena.rep >= need;
+      status.innerHTML = `Arena Rep: <b>${arena.rep}</b> / ${need} — ${arena.unlocked ? 'Unlocked' : 'Locked'}`;
+      if (!arena.unlocked) {
+        actions.innerHTML = `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Arena Task</b></div>
+            <div style="font-size:12px;color:#9f9">Deliver supplies to the Arena Master (+5 Rep)</div>
+            <button onclick="doArenaTask()">Do Task</button>
+          </div>`;
+      } else if (!arena.inArena) {
+        actions.innerHTML = `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Duel</b> — Fight a single gladiator.</div>
+            <button onclick="startArenaDuel()">Enter Duel</button>
+          </div>
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Waves</b> — Survive escalating waves.</div>
+            <button onclick="startArenaWaves()">Enter Waves</button>
+          </div>`;
+      } else {
+        actions.innerHTML = `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div>In Arena: <b>${arena.mode === 'duel' ? 'Duel' : 'Waves (Wave ' + arena.wave + ')'}</b></div>
+            <div>Defeat your opponent to proceed.</div>
+          </div>`;
+      }
+    }
+
+    function doArenaTask() {
+      if (player.town !== 'Ashfall') { log("You're not in Ashfall."); return; }
+      arena.rep = Math.min(999, arena.rep + 5);
+      log("You delivered supplies to the Arena Master. +5 Arena Rep.");
+      renderArenaUI();
+    }
+
+    function startArenaDuel() {
+      if (!arena.unlocked) { log("The Arena is locked."); return; }
+      arena.inArena = true;
+      arena.mode = 'duel';
+      arena.wave = 1;
+      const gladiators = ["Gladiator Brutus", "Gladiator Nyx", "Arena Crusher"];
+      const name = gladiators[Math.floor(Math.random() * gladiators.length)];
+      const hp = 50 + player.level * 7;
+      currentEnemy = { name, hp, dungeon: 'Arena', arena: true, defeated: false };
+      log("Arena Duel begins! Opponent: " + name + " (HP: " + hp + ")");
+      document.getElementById("enemyBox").textContent = enemyAscii[name] || "";
+      inCombat = true;
+      renderArenaUI();
+    }
+
+    function startArenaWaves() {
+      if (!arena.unlocked) { log("The Arena is locked."); return; }
+      arena.inArena = true;
+      arena.mode = 'waves';
+      arena.wave = 0;
+      nextArenaWave();
+    }
+
+    function nextArenaWave() {
+      arena.wave++;
+      const wavePool = ["Gladiator Brutus", "Gladiator Nyx", "Arena Crusher"];
+      const name = wavePool[Math.floor(Math.random() * wavePool.length)];
+      const hp = 40 + player.level * 5 + arena.wave * 10;
+      currentEnemy = { name, hp, dungeon: 'Arena', arena: true, defeated: false };
+      log("Arena Wave " + arena.wave + ": " + name + " (HP: " + hp + ")");
+      document.getElementById("enemyBox").textContent = enemyAscii[name] || "";
+      inCombat = true;
+      renderArenaUI();
+    }
+
+    function handleArenaWin() {
+      if (arena.mode === 'duel') {
+        giveArenaReward('duel');
+        log("You won the duel! Return to the arena board for another challenge.");
+        arena.inArena = false;
+        arena.mode = null;
+        arena.wave = 0;
+        renderArenaUI();
+      } else if (arena.mode === 'waves') {
+        giveArenaReward('wave', arena.wave);
+        if (arena.wave >= 5) {
+          log("You conquered 5 waves and are hailed as a champion!");
+          arena.inArena = false;
+          arena.mode = null;
+          arena.wave = 0;
+          renderArenaUI();
+        } else {
+          nextArenaWave();
+        }
+      }
+    }
+
+    function giveArenaReward(kind, wave = 1) {
+      let rewards = [];
+      if (kind === 'duel') {
+        rewards.push("Arena Token");
+        if (Math.random() < 0.2) rewards.push("Champion's Laurel");
+        player.gold += 15;
+        player.xp += 12;
+        log("+12 XP, +15 gold (Arena Reward).");
+      } else {
+        const tokens = 1 + Math.floor(wave / 2);
+        for (let i = 0; i < tokens; i++) rewards.push("Arena Token");
+        if (wave >= 3 && Math.random() < 0.35) rewards.push("Champion's Laurel");
+        const g = 8 + wave * 4;
+        const x = 8 + wave * 5;
+        player.gold += g;
+        player.xp += x;
+        log("Wave reward: +" + x + " XP, +" + g + " gold.");
+      }
+      grantDrops(rewards);
+    }
+
+    // --- Save/Load system (3 slots, localStorage) ---
+    function toggleSaveMenu() {
+      const m = document.getElementById('saveMenu');
+      const show = m.style.display === 'none' || m.style.display === '';
+      m.style.display = show ? 'block' : 'none';
+      if (show) renderSaveSlots();
+    }
+    function closeSaveMenu() {
+      const m = document.getElementById('saveMenu');
+      m.style.display = 'none';
+    }
+    function slotKey(n) { return 'ascii_rpg_save_slot_' + n; }
+    function renderSaveSlots() {
+      const box = document.getElementById('saveSlots');
+      if (!box) return;
+      let html = '';
+      for (let i = 1; i <= 3; i++) {
+        const exists = !!localStorage.getItem(slotKey(i));
+        html += `
+          <div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0">
+            <span>Slot ${i}: ${exists ? '<span style="color:#9f9">Saved</span>' : '<span style="color:#f99">Empty</span>'}</span>
+            <span>
+              <button onclick="saveToSlot(${i})">Save</button>
+              <button onclick="loadFromSlot(${i})" ${exists ? '' : 'disabled'}>Load</button>
+              <button onclick="deleteSlot(${i})" ${exists ? '' : 'disabled'}>Delete</button>
+            </span>
+          </div>`;
+      }
+      box.innerHTML = html;
+    }
+    function gameState() {
+      return {
+        player,
+        skillState,
+        arena,
+        activeQuest,
+        availableQuests,
+        questPool,
+        shopItems,
+        townAscii: player.town
+      };
+    }
+    function applyGameState(s) {
+      if (!s) return;
+      player = s.player;
+      skillState = s.skillState;
+      arena = s.arena || arena;
+      activeQuest = s.activeQuest || null;
+      availableQuests = s.availableQuests || [];
+      questPool = s.questPool || questPool;
+      shopItems = s.shopItems || shopItems;
+      document.getElementById("townAscii").textContent = townAsciiArt[player.town];
+      updateInventory();
+      updateVorthalonButtonVisibility();
+      renderQuestList();
+      updateAbandonButton();
+      updateShop();
+      updateSkillTreeUI();
+      renderArenaUI();
+      log("Game state loaded.");
+    }
+    function saveToSlot(n) {
+      try {
+        localStorage.setItem(slotKey(n), JSON.stringify(gameState()));
+        log("Saved to slot " + n + ".");
+        renderSaveSlots();
+      } catch (e) {
+        log("Save failed: " + e.message);
+      }
+    }
+    function loadFromSlot(n) {
+      try {
+        const raw = localStorage.getItem(slotKey(n));
+        if (!raw) { log("No save in slot " + n + "."); return; }
+        const s = JSON.parse(raw);
+        applyGameState(s);
+      } catch (e) {
+        log("Load failed: " + e.message);
+      }
+    }
+    function deleteSlot(n) {
+      localStorage.removeItem(slotKey(n));
+      log("Deleted slot " + n + ".");
+      renderSaveSlots();
+    }
+
+    // --- Equipment equipping ---
+    function equipWeapon(name) {
+      if (!itemPool[name] || itemPool[name].type !== 'boss_weapon') {
+        log("That cannot be equipped as a weapon.");
+        return;
+      }
+      if (!player.inventory[name] || player.inventory[name] <= 0) {
+        log("You don't own " + name + ".");
+        return;
+      }
+      player.equipment.weapon = name;
+      log("Equipped weapon: " + name + ".");
+      updateInventory();
+      const ep = document.getElementById('equipmentPanel');
+      if (ep && ep.style.display !== 'none') renderEquipmentWindow();
+    }
+
+    // --- Equipment window ---
+    function toggleEquipmentWindow() {
+      const panel = document.getElementById('equipmentPanel');
+      if (!panel) return;
+      const show = panel.style.display === 'none' || panel.style.display === '';
+      panel.style.display = show ? 'block' : 'none';
+      if (show) renderEquipmentWindow();
+    }
+
+    function renderEquipmentWindow() {
+      const body = document.getElementById('equipmentPanelBody');
+      if (!body) return;
+      const armorTier = player.gearLevel;
+      const armorLabel = ["Ragged Clothes","Iron Gear","Reinforced Gear","Masterwork Gear","Fully upgraded Gear"][armorTier];
+      const weapon = player.equipment.weapon ? player.equipment.weapon : "None";
+      const owned = Object.keys(itemPool).filter(k => itemPool[k].type === 'boss_weapon' && player.inventory[k] > 0);
+      let equipButtons = '';
+      if (owned.length > 0) {
+        equipButtons = owned.map(w => `<button onclick="equipWeapon('${w}')" style="max-width:none;width:auto;margin:2px 0">${w}</button>`).join('<br>');
+      } else {
+        equipButtons = '<span style="color:#9f9">No boss weapons owned.</span>';
+      }
+      const ascii = [
+        "   O   ",
+        "  /|\\  ",
+        "  / \\  "
+      ].join("\\n");
+      body.innerHTML = `
+        <div style="white-space:pre;text-align:center;margin-bottom:4px">${ascii}</div>
+        <div>Armor: <b>${armorLabel}</b></div>
+        <div>Weapon: <b>${weapon}</b></div>
+        <div style="margin-top:6px;border-top:1px dashed #0f0;padding-top:6px">
+          <div style="text-align:center"><b>Equip Boss Weapon</b></div>
+          <div style="text-align:center">${equipButtons}</div>
+        </div>
+      `;
+    }
+
+    // Init
     refreshShop();
     setInterval(refreshShop, 300000);
 
@@ -1099,6 +1502,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
     scheduleNextQuestRefresh();
     updateAbandonButton();
     updateSkillTreeUI();
+    renderSaveSlots();
   </script>
 </body>
 </html>
