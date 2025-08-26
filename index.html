@@ -117,6 +117,7 @@
       <button onclick="tavernJob()">Tavern Job</button>
       <button onclick="blacksmith()">Blacksmith</button>
       <button onclick="rest()">Rest</button>
+      <button onclick="toggleQuestBoard()">Quest Board</button>
     </div>
 
     <div class="card">
@@ -162,6 +163,17 @@ ____ ____ ____ ____ ____ ____
     </div>
   </div>
 
+  <div class="card" id="questBoard" style="display:none; margin-top:8px; width:100%; max-width:1300px;">
+    <div class="ascii-art" id="questAscii">
+      / _ \| | | | ____/ ___|_   _| | __ ) / _ \  / \  |  _ \|  _ \ 
+      | | | | | | |  _| \___ \ | |   |  _ \| | | |/ _ \ | |_) | | | |
+      | |_| | |_| | |___ ___) || |   | |_) | |_| / ___ \|  _ <| |_| |
+       \__\_\\___/|_____|____/ |_|   |____/ \___/_/   \_\_| \_\____/ 
+    </div>
+    <h3>Quest Board</h3>
+    <div id="questList" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
+  </div>
+
   <div id="log"></div>
 
   <div id="inventory">
@@ -197,6 +209,10 @@ ____ ____ ____ ____ ____ ____
 
     let currentEnemy = null;
     let shopItems = [];
+    let questPool = [];
+    let availableQuests = [];
+    let activeQuest = null;
+    let questRefreshTimer = null;
 
     // Item drop system
     const itemPool = {
@@ -483,6 +499,8 @@ _,' 🔥   \_>\_/ 🔥   ',_
         " [####] -- Fully upgraded Gear (will add more after next update)"
       ];
       document.getElementById("gearVisual").textContent = visual[player.gearLevel];
+      // Update quests panel too if open
+      renderQuestList();
     }
 
     function tavernJob() {
@@ -490,10 +508,13 @@ _,' 🔥   \_>\_/ 🔥   ',_
         player.gold += 5;
         player.inventory["Iron Ore"]++;
         log("Worked in Hearthglen Tavern: +5 gold, +1 Iron Ore.");
+        updateQuestProgressOnCollect("Iron Ore");
       } else if (player.town === "Ashfall") {
         player.gold += 18;
         player.inventory["Shadow Essence", "Leather Scraps"]++;
         log("Worked in Ashfall Tavern: +8 gold, +1 Shadow Essence +1 Leather Scraps");
+        updateQuestProgressOnCollect("Shadow Essence");
+        updateQuestProgressOnCollect("Leather Scraps");
       }
     }
 
@@ -505,6 +526,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
         player.inventory[needed]--;
         player.gearLevel++;
         log("Blacksmith upgraded your gear to +" + player.gearLevel + "!");
+        // Blacksmith doesn't affect quest progress directly
       } else if (player.gearLevel >= 3) {
         log("Your gear is already maxed out!");
       } else {
@@ -517,6 +539,111 @@ _,' 🔥   \_>\_/ 🔥   ',_
       log("You rest at the inn and recover to full health.");
     }
 
+    // --- Quest Board system ---
+    function toggleQuestBoard() {
+      const board = document.getElementById('questBoard');
+      const show = board.style.display === 'none' || board.style.display === '';
+      board.style.display = show ? 'block' : 'none';
+      if (show) renderQuestList();
+    }
+
+    function initQuestPool() {
+      questPool = [
+        { id: 'q_rat_1', title: 'Cull the Rat Caves', type: 'kill', target: 'Rat', count: 10, rewardGold: 20, rewardXp: 15 },
+        { id: 'q_rat_2', title: 'Hunt the Mutated Rat', type: 'killNamed', target: 'Mutated Rat', count: 3, rewardGold: 25, rewardXp: 20 },
+        { id: 'q_cat_1', title: 'Cleanse the Catacombs', type: 'kill', target: 'Skeleton', count: 8, rewardGold: 30, rewardXp: 25 },
+        { id: 'q_cat_2', title: 'Silence the Necromancer', type: 'killNamed', target: 'Necromancer', count: 2, rewardGold: 45, rewardXp: 35 },
+        { id: 'q_ash_1', title: 'Quench the Flames', type: 'kill', target: 'Fire', count: 7, rewardGold: 40, rewardXp: 30 },
+        { id: 'q_ash_2', title: 'Stone and Ember', type: 'killNamed', target: 'Ash Golem', count: 2, rewardGold: 50, rewardXp: 35 },
+        { id: 'q_mat_1', title: 'Gather Iron Ore', type: 'collect', item: 'Iron Ore', count: 5, rewardGold: 18, rewardXp: 12 },
+        { id: 'q_mat_2', title: 'Harvest Leather', type: 'collect', item: 'Leather Scraps', count: 6, rewardGold: 22, rewardXp: 14 },
+        { id: 'q_mag_1', title: 'Arcane Supplies', type: 'collect', item: 'Arcane Crystal', count: 2, rewardGold: 35, rewardXp: 28 },
+        { id: 'q_val_1', title: 'Ancient Tender', type: 'collect', item: 'Ancient Coin', count: 1, rewardGold: 30, rewardXp: 20 },
+        { id: 'q_trv_1', title: 'Courier to Ashfall', type: 'travel', town: 'Ashfall', rewardGold: 12, rewardXp: 10 },
+        { id: 'q_trv_2', title: 'Courier to Hearthglen', type: 'travel', town: 'Hearthglen', rewardGold: 10, rewardXp: 8 },
+        { id: 'q_boss_1', title: 'Forewarned Star', type: 'killNamed', target: 'Vorthalon, Starbinder of Endlight', count: 1, rewardGold: 120, rewardXp: 120 },
+        { id: 'q_junk_1', title: 'Clean the Streets', type: 'collect', item: 'Dirty Rag', count: 4, rewardGold: 8, rewardXp: 6 },
+        { id: 'q_mix_1', title: 'Ashen Samples', type: 'collect', item: 'Shadow Essence', count: 3, rewardGold: 28, rewardXp: 22 }
+      ];
+    }
+
+    function refreshQuestsNow() {
+      // pick 4 random unique quests
+      const indices = new Set();
+      while (indices.size < 4 && indices.size < questPool.length) {
+        indices.add(Math.floor(Math.random() * questPool.length));
+      }
+      availableQuests = Array.from(indices).map(i => ({ ...questPool[i], progress: 0 }));
+      renderQuestList();
+      log('The Quest Board has been updated.');
+    }
+
+    function scheduleNextQuestRefresh() {
+      if (questRefreshTimer) clearTimeout(questRefreshTimer);
+      const minutes = 4 + Math.floor(Math.random() * 3); // 4-6 minutes
+      questRefreshTimer = setTimeout(() => {
+        refreshQuestsNow();
+        scheduleNextQuestRefresh();
+      }, minutes * 60 * 1000);
+    }
+
+    function renderQuestList() {
+      const list = document.getElementById('questList');
+      if (!list) return;
+      list.innerHTML = '';
+      availableQuests.forEach((q, idx) => {
+        const canAccept = !activeQuest;
+        list.innerHTML += `
+          <div style="border:1px dashed #0f0;padding:6px">
+            <div><b>${q.title}</b></div>
+            <div style="font-size:12px;color:#9f9">${describeQuest(q)}</div>
+            <div style="font-size:12px;color:#9f9">Reward: ${q.rewardGold || 0}g, ${q.rewardXp || 0} XP</div>
+            <div style="font-size:12px;color:#9f9">Progress: ${q.progress || 0}/${q.count || 1}</div>
+            <button onclick="acceptQuest(${idx})" ${canAccept ? '' : 'disabled'}>Accept</button>
+          </div>`;
+      });
+      if (activeQuest) {
+        list.innerHTML += `<div style="grid-column:1/-1;border:1px solid #0f0;padding:6px;margin-top:6px">Active: <b>${activeQuest.title}</b> — ${describeQuest(activeQuest)} — Progress: ${activeQuest.progress || 0}/${activeQuest.count || 1}</div>`;
+      }
+    }
+
+    function describeQuest(q) {
+      if (q.type === 'kill') return `Defeat ${q.count} ${q.target}(s).`;
+      if (q.type === 'killNamed') return `Defeat ${q.count} ${q.target}.`;
+      if (q.type === 'collect') return `Collect ${q.count} ${q.item}.`;
+      if (q.type === 'travel') return `Travel to ${q.town}.`;
+      return '';
+    }
+
+    function acceptQuest(idx) {
+      if (activeQuest) { log('You already have an active quest.'); return; }
+      if (!availableQuests[idx]) return;
+      activeQuest = { ...availableQuests[idx], progress: 0 };
+      log('Accepted quest: ' + activeQuest.title);
+      renderQuestList();
+    }
+
+    function tryCompleteQuest() {
+      if (!activeQuest) return;
+      if (activeQuest.type === 'travel') {
+        // Travel quests complete on arrival; handled in travel()
+        return;
+      }
+      if ((activeQuest.type === 'kill' || activeQuest.type === 'killNamed' || activeQuest.type === 'collect') && activeQuest.progress >= (activeQuest.count || 1)) {
+        completeActiveQuest();
+      }
+    }
+
+    function completeActiveQuest() {
+      if (!activeQuest) return;
+      const g = activeQuest.rewardGold || 0;
+      const x = activeQuest.rewardXp || 0;
+      player.gold += g;
+      player.xp += x;
+      log(`Quest complete: ${activeQuest.title} (+${g}g, +${x} XP)`);
+      activeQuest = null;
+      renderQuestList();
+    }
     function updateVorthalonButtonVisibility() {
       const btn = document.getElementById('challengeVorthalonBtn');
       if (!btn) return;
@@ -533,6 +660,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
       currentEnemy = { name: enemy, hp: 200, dungeon: 'Ashen Rift' };
       log("You challenge " + enemy + "! HP: " + currentEnemy.hp);
       document.getElementById("enemyBox").textContent = enemyAscii[enemy] || "";
+      // Quest progress for accepting the challenge counts as a killNamed only on defeat
     }
 
     function calculateDrop(dungeonName, playerLevel) {
@@ -573,6 +701,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
         if (availableItems.length > 0) {
           const selectedItem = availableItems[Math.floor(Math.random() * availableItems.length)];
           drops.push(selectedItem);
+          updateQuestProgressOnCollect(selectedItem);
         }
       }
       
@@ -603,6 +732,32 @@ _,' 🔥   \_>\_/ 🔥   ',_
       return drops;
     }
 
+    function updateQuestProgressOnHit() {
+      // reserved for future per-hit quests
+    }
+
+    function updateQuestProgressOnKill(enemyName) {
+      if (!activeQuest) return;
+      if (activeQuest.type === 'kill' && enemyName && enemyName.includes(activeQuest.target)) {
+        activeQuest.progress = (activeQuest.progress || 0) + 1;
+        renderQuestList();
+        tryCompleteQuest();
+      } else if (activeQuest.type === 'killNamed' && enemyName === activeQuest.target) {
+        activeQuest.progress = (activeQuest.progress || 0) + 1;
+        renderQuestList();
+        tryCompleteQuest();
+      }
+    }
+
+    function updateQuestProgressOnCollect(itemName) {
+      if (!activeQuest) return;
+      if (activeQuest.type === 'collect' && activeQuest.item === itemName) {
+        activeQuest.progress = (activeQuest.progress || 0) + 1;
+        renderQuestList();
+        tryCompleteQuest();
+      }
+    }
+
     function enterDungeon(name) {
       log("You enter the " + name + "...");
       let enemies;
@@ -628,6 +783,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
         let dmg = 5 + player.gearLevel * 2;
         currentEnemy.hp -= dmg;
         log("You attack the " + currentEnemy.name + " for " + dmg + " dmg!");
+        updateQuestProgressOnHit();
       }
       if (action === "spell") {
         if (player.inventory["Ember Core"] > 0) {
@@ -656,6 +812,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
 
       if (currentEnemy && currentEnemy.hp <= 0) {
         log("You defeated the " + currentEnemy.name + "!");
+        updateQuestProgressOnKill(currentEnemy.name);
         player.xp += 10;
         player.gold += 5;
         log("+10 XP, +5 gold.");
@@ -704,6 +861,10 @@ _,' 🔥   \_>\_/ 🔥   ',_
       document.getElementById("townAscii").textContent = townAsciiArt[destination];
       log("You travel to " + destination + ".");
       updateVorthalonButtonVisibility();
+      // Travel quest completion
+      if (activeQuest && activeQuest.type === 'travel' && activeQuest.town === destination) {
+        completeActiveQuest();
+      }
     }
 
     // --- Shop system ---
@@ -738,6 +899,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
         player.gold -= item.price;
         player.inventory[item.name]++;
         log("Bought 1 " + item.name + " for " + item.price + " gold.");
+        updateQuestProgressOnCollect(item.name);
       } else {
         log("Not enough gold!");
       }
@@ -749,6 +911,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
         const sellPrice = itemPool[name] ? Math.floor(itemPool[name].value * 0.6) : Math.floor(price / 2);
         player.gold += sellPrice;
         log("Sold 1 " + name + " for " + sellPrice + " gold.");
+        // Selling doesn't count as collecting; no quest progress here
       } else {
         log("You don't have any " + name + " to sell.");
       }
@@ -760,6 +923,9 @@ _,' 🔥   \_>\_/ 🔥   ',_
 
     updateInventory();
     updateVorthalonButtonVisibility();
+    initQuestPool();
+    refreshQuestsNow();
+    scheduleNextQuestRefresh();
   </script>
 </body>
 </html>
