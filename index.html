@@ -129,28 +129,26 @@
     <div class="card">
       <div class="ascii-art" id="townAscii">
        
-____ ____ ____ ____ ____ ____ ____ ____ ____ ___
-|H |||E |||A |||R |||T ||H |||G |||L |||E |||N ||
-|__|||__|||__|||__|||__||__|||__|||__|||__|||__||
-|__\|/__\|/__\|/__\|/__\/__\|/__\|/__\|/__\|/__\|
-
-
+ ____ ____ ____ ____ ____ ____ ____ ____ ____ ____ 
+ ||H |||E |||A |||R |||T |||H |||G |||L |||E |||N ||
+ ||__|||__|||__|||__|||__|||__|||__|||__|||__|||__||
+ |/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|
+            
       </div>
       <h3>TOWN AREA</h3>
       <button onclick="tavernJob()">Tavern Job</button>
       <button onclick="blacksmith()">Blacksmith</button>
       <button onclick="rest()">Rest</button>
       <button onclick="toggleQuestBoard()">Quest Board</button>
+      <button onclick="toggleSkillTree()">Skill Tree</button>
     </div>
 
     <div class="card">
       <div class="ascii-art">    
-
  ____ ____ ____ ____ ____ ____ ____ ____ 
 ||D |||U |||N |||G |||E |||O |||N |||S ||
 ||__|||__|||__|||__|||__|||__|||__|||__||
 |/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|
-
       </div>
       <h3>-</h3>
       <button onclick="enterDungeon('Rat Caves')">Rat Caves</button>
@@ -197,8 +195,50 @@ ____ ____ ____ ____ ____ ____
     </div>
     <h3>Quest Board</h3>
     <div id="questList" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
+    <div style="margin-top:6px;text-align:center">
+      <button id="abandonQuestBtn" onclick="abandonQuest()" disabled>Abandon Active Quest</button>
+    </div>
   </div>
 
+  <div class="card" id="skillTreeCard" style="display:none; margin-top:8px; width:100%; max-width:1300px;">
+    <div class="ascii-art">
+ 
+
+      __      _           ____   _  _
+      (_  |/  |  |  |      | |_) |_ |_
+      __) |\ _|_ |_ |_     | | \ |_ |_
+      
+         
+    </div>
+    <h3>Skill Tree</h3>
+    <div id="classSelect" style="margin-bottom:8px;text-align:center">
+      <span>Class:</span>
+      <select id="classPicker" onchange="setPlayerClass(this.value)">
+        <option value="None">None</option>
+        <option value="Warrior">Warrior</option>
+        <option value="Mage">Mage</option>
+        <option value="Rogue">Rogue</option>
+      </select>
+      <span style="margin-left:10px">Unspent Points: <b id="skillPointsLabel">0</b></span>
+    </div>
+    <div class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); width:100%">
+      <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+        <div><b>Power</b> (+1 attack damage / point)</div>
+        <div>Current: <span id="skillPowerVal">0</span></div>
+        <button onclick="allocatePoint('power')">Allocate</button>
+      </div>
+      <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+        <div><b>Focus</b> (+1 spell damage / point)</div>
+        <div>Current: <span id="skillFocusVal">0</span></div>
+        <button onclick="allocatePoint('focus')">Allocate</button>
+      </div>
+      <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+        <div><b>Vitality</b> (+5 max HP / point)</div>
+        <div>Current: <span id="skillVitalityVal">0</span></div>
+        <button onclick="allocatePoint('vitality')">Allocate</button>
+      </div>
+    </div>
+  </div>
   
 
   <div id="inventory">
@@ -238,6 +278,17 @@ ____ ____ ____ ____ ____ ____
     let availableQuests = [];
     let activeQuest = null;
     let questRefreshTimer = null;
+    let inCombat = false;
+    let bossWeaponsCache = null; // cached list for drop filtering
+
+    // Skill system state
+    let skillState = {
+      className: 'None',
+      pointsUnspent: 0,
+      power: 0,
+      focus: 0,
+      vitality: 0
+    };
 
     // Item drop system
     const itemPool = {
@@ -261,6 +312,13 @@ ____ ____ ____ ____ ____ ____
       "Gold Nugget": { value: 25, rarity: "rare", type: "valuable" },
       "Ancient Coin": { value: 30, rarity: "rare", type: "valuable" },
       "Dragon Scale": { value: 50, rarity: "epic", type: "valuable" },
+      // Hearthglen tier-2 drops (new)
+      "Boar Tusk": { value: 9, rarity: "uncommon", type: "material" },
+      "Bandit Emblem": { value: 14, rarity: "rare", type: "valuable" },
+      "Warden Leaf": { value: 7, rarity: "common", type: "material" },
+      "Spider Silk": { value: 12, rarity: "uncommon", type: "material" },
+      "Cave Moss": { value: 6, rarity: "common", type: "material" },
+      "Runed Shard": { value: 20, rarity: "rare", type: "magical" },
 
       // Boss-only weapons (Vorthalon)
       "Starbinder's Edge": { value: 120, rarity: "rare", type: "boss_weapon" },
@@ -565,6 +623,10 @@ _,' 🔥   \_>\_/ 🔥   ',_
     }
 
     function rest() {
+      if (inCombat) {
+        log("You cannot rest during combat.");
+        return;
+      }
       player.hp = player.maxHp;
       log("You rest at the inn and recover to full health.");
     }
@@ -574,7 +636,17 @@ _,' 🔥   \_>\_/ 🔥   ',_
       const board = document.getElementById('questBoard');
       const show = board.style.display === 'none' || board.style.display === '';
       board.style.display = show ? 'block' : 'none';
-      if (show) renderQuestList();
+      if (show) {
+        renderQuestList();
+        updateAbandonButton();
+      }
+    }
+
+    function toggleSkillTree() {
+      const card = document.getElementById('skillTreeCard');
+      const show = card.style.display === 'none' || card.style.display === '';
+      card.style.display = show ? 'block' : 'none';
+      updateSkillTreeUI();
     }
 
     function initQuestPool() {
@@ -651,6 +723,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
       activeQuest = { ...availableQuests[idx], progress: 0 };
       log('Accepted quest: ' + activeQuest.title);
       renderQuestList();
+      updateAbandonButton();
     }
 
     function tryCompleteQuest() {
@@ -673,6 +746,21 @@ _,' 🔥   \_>\_/ 🔥   ',_
       log(`Quest complete: ${activeQuest.title} (+${g}g, +${x} XP)`);
       activeQuest = null;
       renderQuestList();
+      updateAbandonButton();
+    }
+
+    function abandonQuest() {
+      if (!activeQuest) { log('No active quest to abandon.'); return; }
+      log(`You abandoned the quest: ${activeQuest.title}`);
+      activeQuest = null;
+      renderQuestList();
+      updateAbandonButton();
+    }
+
+    function updateAbandonButton() {
+      const btn = document.getElementById('abandonQuestBtn');
+      if (!btn) return;
+      btn.disabled = !activeQuest;
     }
     function updateVorthalonButtonVisibility() {
       const btn = document.getElementById('challengeVorthalonBtn');
@@ -723,9 +811,9 @@ _,' 🔥   \_>\_/ 🔥   ',_
           else if (rarityChance > 0.2) itemRarity = "uncommon";
         }
         
-        // Filter items by rarity
+        // Filter items by rarity and exclude boss weapons from normal drops
         const availableItems = Object.keys(itemPool).filter(item => 
-          itemPool[item].rarity === itemRarity
+          itemPool[item].rarity === itemRarity && itemPool[item].type !== 'boss_weapon'
         );
         
         if (availableItems.length > 0) {
@@ -798,10 +886,18 @@ _,' 🔥   \_>\_/ 🔥   ',_
       } else if (name === "Ashen Rift") {
         enemies = ["Fire Imp", "Lava Serpent", "Doomed Paladin", "Ash Golem", "Magma Elemental", "Phoenix", "Crystal Golem"];
       }
+      // Add 5 new enemies in Hearthglen dungeons when player.level >= 10
+      if (player.town === 'Hearthglen' && player.level >= 10) {
+        const hearthglenTier2 = [
+          'Bandit Raider', 'Stone Boar', 'Forest Warden', 'Runed Spider', 'Cave Stalker'
+        ];
+        enemies = enemies.concat(hearthglenTier2);
+      }
       const enemy = enemies[Math.floor(Math.random() * enemies.length)];
       currentEnemy = { name: enemy, hp: 30 + player.level * 5, dungeon: name };
       log("A " + enemy + " appears! HP: " + currentEnemy.hp);
       document.getElementById("enemyBox").textContent = enemyAscii[enemy] || "";
+      inCombat = true;
     }
 
     function combat(action) {
@@ -810,14 +906,14 @@ _,' 🔥   \_>\_/ 🔥   ',_
         return;
       }
       if (action === "attack") {
-        let dmg = 5 + player.gearLevel * 2;
+        let dmg = 5 + player.gearLevel * 2 + (skillState.power || 0);
         currentEnemy.hp -= dmg;
         log("You attack the " + currentEnemy.name + " for " + dmg + " dmg!");
         updateQuestProgressOnHit();
       }
       if (action === "spell") {
         if (player.inventory["Ember Core"] > 0) {
-          let dmg = 15;
+          let dmg = 15 + (skillState.focus || 0);
           currentEnemy.hp -= dmg;
           log("You cast a spell for " + dmg + " dmg!");
         } else {
@@ -837,6 +933,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
         log("You fled the battle.");
         currentEnemy = null;
         document.getElementById("enemyBox").textContent = "";
+        inCombat = false;
         return;
       }
 
@@ -865,9 +962,11 @@ _,' 🔥   \_>\_/ 🔥   ',_
           player.level++;
           log("Level up! You are now level " + player.level);
           updateVorthalonButtonVisibility();
+          awardSkillPointOnLevel();
         }
         currentEnemy = null;
         document.getElementById("enemyBox").textContent = "";
+        inCombat = false;
       } else {
         let dmg = 5;
         player.hp -= dmg;
@@ -878,6 +977,7 @@ _,' 🔥   \_>\_/ 🔥   ',_
           player.gold = Math.max(0, player.gold - 5);
           currentEnemy = null;
           document.getElementById("enemyBox").textContent = "";
+          inCombat = false;
         }
       }
     }
@@ -908,6 +1008,47 @@ _,' 🔥   \_>\_/ 🔥   ',_
         shopItems.push({ name: item, price });
       }
       updateShop();
+    }
+
+    // --- Skills logic ---
+    function updateSkillTreeUI() {
+      const pts = document.getElementById('skillPointsLabel');
+      const p = document.getElementById('skillPowerVal');
+      const f = document.getElementById('skillFocusVal');
+      const v = document.getElementById('skillVitalityVal');
+      const picker = document.getElementById('classPicker');
+      if (pts) pts.textContent = String(skillState.pointsUnspent);
+      if (p) p.textContent = String(skillState.power);
+      if (f) f.textContent = String(skillState.focus);
+      if (v) v.textContent = String(skillState.vitality);
+      if (picker && picker.value !== skillState.className) picker.value = skillState.className;
+    }
+
+    function setPlayerClass(value) {
+      skillState.className = value;
+      log('Class set to ' + value + '.');
+      updateSkillTreeUI();
+    }
+
+    function allocatePoint(stat) {
+      if (skillState.pointsUnspent <= 0) { log('No skill points available.'); return; }
+      if (stat === 'power') {
+        skillState.power++;
+      } else if (stat === 'focus') {
+        skillState.focus++;
+      } else if (stat === 'vitality') {
+        skillState.vitality++;
+        player.maxHp += 5;
+        player.hp = Math.min(player.hp + 5, player.maxHp);
+      }
+      skillState.pointsUnspent--;
+      updateSkillTreeUI();
+    }
+
+    function awardSkillPointOnLevel() {
+      // Award 1 point per level up
+      skillState.pointsUnspent++;
+      updateSkillTreeUI();
     }
 
     function updateShop() {
@@ -956,7 +1097,8 @@ _,' 🔥   \_>\_/ 🔥   ',_
     initQuestPool();
     refreshQuestsNow();
     scheduleNextQuestRefresh();
+    updateAbandonButton();
+    updateSkillTreeUI();
   </script>
 </body>
 </html>
-
