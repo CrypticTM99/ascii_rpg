@@ -1,6 +1,6 @@
 # ASCII RPG (Browser-based)
 
-An entirely client-side, single-file ASCII RPG built with plain HTML/CSS/JavaScript. Explore dungeons, complete quests, earn gold and items, upgrade your gear, allocate skill points, and challenge bosses as you level your character to the fullest! 
+An entirely client-side, single-file ASCII RPG built with plain HTML/CSS/JavaScript. Explore dungeons, complete quests, earn gold and items, upgrade your gear, allocate skill points, challenge bosses, and now with pets, crafting, achievements, and daily challenges! 
 This will be created as a nice template for others to use for their own projects! 
 I will update this continuining development for my own itch.io version (itch.io/cryptictm) 
 
@@ -11,14 +11,14 @@ I will update this continuining development for my own itch.io version (itch.io/
 
 ## Core Gameplay
 
-- Town actions: Work jobs, use the blacksmith, rest, open the Quest Board, and manage your Skill Tree.
+- Town actions: Work jobs, use the blacksmith, rest, open the Quest Board, manage your Skill Tree, adopt pets, craft items, track achievements, and complete daily challenges.
 - Dungeons: Enter different dungeons to fight randomized enemies and collect drops.
 - Combat: Use Attack, Cast Spell, Use Item, or Run. The combat panel shows the current enemy and your scrolling log.
 - Progression: Gain XP and gold from battles and quests. Leveling up awards skill points.
 
 ## UI Overview
 
-- Town Area card: Job actions, blacksmith, rest, quest/skill UI toggles.
+- Town Area card: Job actions, blacksmith, rest, quest/skill UI toggles, pet system, crafting, achievements, and daily challenges.
 - Dungeons card: Choose a dungeon (Rat Caves, Old Catacombs, Ashen Rift).
 - Combat card: Combat actions, enemy ASCII art, and an internal scrolling log (newest entries at the bottom).
 - Travel card: Move between `Hearthglen` and `Ashfall` (Ashfall requires level increase to enter).
@@ -26,6 +26,10 @@ I will update this continuining development for my own itch.io version (itch.io/
 - Inventory card: Shows item counts, gold, HP, level/XP, and gear level.
 - Marketplace card: Random shop that refreshes every 5 minutes.
 - Skill Tree card: Pick a class and allocate points to Power, Focus, Vitality.
+- Pet System card: Adopt, feed, and care for ASCII art pets that provide combat bonuses.
+- Crafting Workshop card: Combine materials to create new items and equipment.
+- Achievements card: Track your accomplishments and earn rewards.
+- Daily Challenges card: Special daily quests with unique rewards and streaks.
 
 ## Systems
 
@@ -75,6 +79,36 @@ I will update this continuining development for my own itch.io version (itch.io/
 - Buy items (if you have enough gold) or sell items (for 60% of item base value).
 - Refreshes automatically every 5 minutes.
 
+### NEW: Pet System
+- Adopt ASCII art pets: Wolf Pup, Mystic Cat, Guardian Owl, Dragon Hatchling
+- Pets provide combat bonuses (attack, spell, defense, or all stats)
+- Feed pets with Pet Treats to maintain happiness
+- Unhappy pets will run away
+- Pet bonuses are automatically applied to combat
+
+### NEW: Crafting System
+- Combine materials to create new items
+- Recipes: Magic Sword, Healing Potion, Stealth Cloak, Arcane Staff
+- Materials include new crafting-specific items
+- Crafted items have unique properties and values
+
+### NEW: Achievement System
+- Track progress on various goals
+- Achievements: First Blood, Rat Slayer, Quest Master, Dungeon Crawler, Boss Slayer, Craftsman, Pet Lover, Arena Champion
+- Rewards include gold, XP, and special items
+- Progress is automatically tracked
+
+### NEW: Daily Challenges
+- Special daily quests with unique rewards
+- Types: Kill Spree, Quest Rush, Crafting Day, Pet Care
+- Rewards include gold, XP, and special items
+- Streak system for consecutive completions
+
+### Arena System
+- Ashfall Arena with duels and wave challenges
+- Earn Arena Tokens and Champion's Laurels
+- Build reputation to unlock special challenges
+
 ## Controls
 
 - Mouse-only. Click buttons in the cards to perform actions.
@@ -92,6 +126,10 @@ I will update this continuining development for my own itch.io version (itch.io/
     - Quest system: `initQuestPool()`, `refreshQuestsNow()`, `renderQuestList()`, `acceptQuest()`, `abandonQuest()`, `completeActiveQuest()`
     - Drop tables: `calculateDrop(dungeonName, playerLevel)`, `calculateVorthalonDrops(playerLevel)`
     - Skills: `toggleSkillTree()`, `setPlayerClass(value)`, `allocatePoint(stat)`, `awardSkillPointOnLevel()`, `updateSkillTreeUI()`
+    - NEW: Pet system: `togglePetSystem()`, `adoptPet(name)`, `feedPet()`, `playWithPet()`
+    - NEW: Crafting: `toggleCrafting()`, `craftItem(recipeName)`, `canCraftRecipe(recipe)`
+    - NEW: Achievements: `toggleAchievements()`, `checkAchievement(id)`, `renderAchievements()`
+    - NEW: Daily Challenges: `toggleDailyChallenges()`, `startDailyChallenge()`, `claimDailyReward()`
 
 ## Balancing & Tuning (Suggested)
 
@@ -99,14 +137,58 @@ I will update this continuining development for my own itch.io version (itch.io/
 - Tweak XP thresholds for leveling and the number of skill points awarded per level.
 - Refine shop pricing ranges and item availability.
 - Consider adding enemy damage/HP scaling by dungeon and level.
+- Balance pet bonuses and happiness decay rates.
+- Adjust crafting material requirements and recipe difficulty.
+- Fine-tune achievement requirements and rewards.
+- Balance daily challenge targets and rewards.
 
 ## Roadmap Ideas
 
-- More skill nodes and class-specific perks
-- Equipment slots (weapon/armor/trinket) instead of a single gear level
-- Multi-step quest lines and quest rewards that grant skill points or unique items
-- Additional bosses and dungeon tiers
-- Save/load using localStorage
+### Version 0.7.0 - Enhanced Combat & Progression
+- [ ] Multi-step quest lines and quest rewards that grant skill points or unique items
+- [ ] Equipment slots (weapon/armor/trinket) instead of a single gear level
+- [ ] Status effects and buffs/debuffs
+- [ ] Critical hits and dodge mechanics
+- [ ] Special abilities for each class
+
+### Version 0.8.0 - World Expansion
+- [ ] Additional towns and regions
+- [ ] New dungeon tiers and boss encounters
+- [ ] Seasonal events and limited-time content
+- [ ] NPC interactions and reputation systems
+- [ ] Guild/clan system
+
+### Version 0.9.0 - Advanced Systems
+- [ ] Prestige system with permanent bonuses
+- [ ] Advanced pet evolution and breeding
+- [ ] Player housing and decoration
+- [ ] Trading system between players (localStorage-based)
+- [ ] Mini-games and side activities
+
+### Version 1.0.0 - Polish & Completion
+- [ ] Sound effects and music (text-based descriptions)
+- [ ] Advanced save/load with cloud sync options
+- [ ] Modding support and plugin system
+- [ ] Mobile optimization and touch controls
+- [ ] Multiplayer features (local co-op)
+
+## Current Version: 0.6.0
+
+### What's New in 0.6.0
+- **Pet System**: Adopt ASCII art pets that provide combat bonuses
+- **Crafting System**: Combine materials to create new items and equipment
+- **Achievement System**: Track progress and earn rewards for various goals
+- **Daily Challenges**: Special daily quests with unique rewards and streaks
+- **Enhanced Combat**: Pet bonuses automatically applied to attack, spell, and defense
+- **New Items**: Pet treats, crafting materials, and prestige rewards
+- **Improved Save System**: All new features are fully save/load compatible
+
+### Technical Improvements
+- Modular system architecture for easy expansion
+- Comprehensive achievement progress tracking
+- Daily challenge system with automatic refresh
+- Pet happiness system with automatic decay
+- Enhanced combat calculations with pet bonuses
 
 ## Credits
 

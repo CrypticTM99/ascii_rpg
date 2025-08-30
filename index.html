@@ -133,7 +133,7 @@
       </div>
     </div>
   </div>
-  <h1>ASCII RPG - Update 0.5.1</h1>
+  <h1>ASCII RPG - Update 0.6.0</h1>
 
   <div id="main">
     <div class="card">
@@ -151,6 +151,10 @@
       <button onclick="rest()">Rest</button>
       <button onclick="toggleQuestBoard()">Quest Board</button>
       <button onclick="toggleSkillTree()">Skill Tree</button>
+      <button onclick="togglePetSystem()">Pet System</button>
+      <button onclick="toggleCrafting()">Crafting</button>
+      <button onclick="toggleAchievements()">Achievements</button>
+      <button onclick="toggleDailyChallenges()">Daily Challenges</button>
       <button id="arenaBtn" onclick="toggleArena()" style="display:none">Ashfall Arena</button>
     </div>
 
@@ -263,6 +267,60 @@ ____ ____ ____ ____ ____ ____
     <h3>Ashfall Arena</h3>
     <div id="arenaStatus" style="text-align:center;margin-bottom:6px"></div>
     <div id="arenaActions" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
+  </div>
+
+  <div class="card" id="petCard" style="display:none; margin-top:8px; width:100%; max-width:1300px;">
+    <div class="ascii-art">
+      /\\___/\\
+     (  o o  )
+     (  =^=  ) 
+      (______)
+         |  |
+        _|  |_
+    </div>
+    <h3>Pet Companion</h3>
+    <div id="petStatus" style="text-align:center;margin-bottom:6px"></div>
+    <div id="petActions" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
+  </div>
+
+  <div class="card" id="craftingCard" style="display:none; margin-top:8px; width:100%; max-width:1300px;">
+    <div class="ascii-art">
+      /\\___/\\
+     (  🔨🔨  )
+     (  =^=  ) 
+      (______)
+         |  |
+        _|  |_
+    </div>
+    <h3>Crafting Workshop</h3>
+    <div id="craftingRecipes" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
+  </div>
+
+  <div class="card" id="achievementsCard" style="display:none; margin-top:8px; width:100%; max-width:1300px;">
+    <div class="ascii-art">
+      /\\___/\\
+     (  🏆🏆  )
+     (  =^=  ) 
+      (______)
+         |  |
+        _|  |_
+    </div>
+    <h3>Achievements</h3>
+    <div id="achievementsList" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
+  </div>
+
+  <div class="card" id="dailyChallengesCard" style="display:none; margin-top:8px; width:100%; max-width:1300px;">
+    <div class="ascii-art">
+      /\\___/\\
+     (  🌟🌟  )
+     (  =^=  ) 
+      (______)
+         |  |
+        _|  |_
+    </div>
+    <h3>Daily Challenges</h3>
+    <div id="dailyChallengeStatus" style="text-align:center;margin-bottom:6px"></div>
+    <div id="dailyChallengeActions" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
   </div>
 
   <div id="inventory" style="position:relative">
@@ -985,8 +1043,17 @@ _,' 🔥   \_>\_/ 🔥   ',_
       player.xp += x;
       log(`Quest complete: ${activeQuest.title} (+${g}g, +${x} XP)`);
       activeQuest = null;
+      updateInventory();
       renderQuestList();
       updateAbandonButton();
+      
+      // Update achievement progress
+      if (!achievements.progress["Quest Master"]) achievements.progress["Quest Master"] = 0;
+      achievements.progress["Quest Master"]++;
+      checkAchievement("Quest Master");
+      
+      // Update daily challenge progress
+      updateDailyChallengeProgress("quest", 1);
     }
 
     function abandonQuest() {
@@ -1153,14 +1220,14 @@ _,' 🔥   \_>\_/ 🔥   ',_
         return;
       }
       if (action === "attack") {
-        let dmg = 5 + player.gearLevel * 2 + (skillState.power || 0);
+        let dmg = getPlayerAtk();
         currentEnemy.hp -= dmg;
         log("You attack the " + currentEnemy.name + " for " + dmg + " dmg!");
         updateQuestProgressOnHit();
       }
       if (action === "spell") {
         if (player.inventory["Ember Core"] > 0) {
-          let dmg = 15 + (skillState.focus || 0);
+          let dmg = getPlayerSpell();
           currentEnemy.hp -= dmg;
           log("You cast a spell for " + dmg + " dmg!");
         } else {
@@ -1199,10 +1266,21 @@ _,' 🔥   \_>\_/ 🔥   ',_
         player.gold += 5;
         log("+10 XP, +5 gold.");
         
+        // Update achievement progress for kills
+        if (currentEnemy.name.toLowerCase().includes('rat')) {
+          if (!achievements.progress["Rat Slayer"]) achievements.progress["Rat Slayer"] = 0;
+          achievements.progress["Rat Slayer"]++;
+          checkAchievement("Rat Slayer");
+        }
+        
+        // Update daily challenge progress for kills
+        updateDailyChallengeProgress("kill", 1);
+        
         // Arena vs Boss vs Normal rewards
         if (currentEnemy.name === "Vorthalon, Starbinder of Endlight") {
           const drops = calculateVorthalonDrops(player.level);
           grantDrops(drops);
+          checkAchievement("Boss Slayer");
         } else if (currentEnemy.arena) {
           handleArenaWin();
         } else {
@@ -1216,6 +1294,9 @@ _,' 🔥   \_>\_/ 🔥   ',_
           updateVorthalonButtonVisibility();
           awardSkillPointOnLevel();
         }
+        
+        // Check for First Blood achievement
+        checkAchievement("First Blood");
         currentEnemy = null;
       } else {
         let base = 5;
@@ -1473,6 +1554,14 @@ _,' 🔥   \_>\_/ 🔥   ',_
           nextArenaWave();
         }
       }
+      
+      // Update achievement progress for arena wins
+      if (!achievements.progress["Arena Champion"]) achievements.progress["Arena Champion"] = 0;
+      achievements.progress["Arena Champion"]++;
+      checkAchievement("Arena Champion");
+      
+      // Update daily challenge progress for arena wins
+      updateDailyChallengeProgress("arena", 1);
     }
 
     function giveArenaReward(kind, wave = 1) {
@@ -1535,7 +1624,12 @@ _,' 🔥   \_>\_/ 🔥   ',_
         availableQuests,
         questPool,
         shopItems,
-        townAscii: player.town
+        townAscii: player.town,
+        achievements,
+        pets,
+        crafting,
+        dailyChallenges,
+        prestige
       };
     }
     function applyGameState(s) {
@@ -1547,6 +1641,12 @@ _,' 🔥   \_>\_/ 🔥   ',_
       availableQuests = s.availableQuests || [];
       questPool = s.questPool || questPool;
       shopItems = s.shopItems || shopItems;
+      achievements = s.achievements || achievements;
+      pets = s.pets || pets;
+      crafting = s.crafting || crafting;
+      dailyChallenges = s.dailyChallenges || dailyChallenges;
+      prestige = s.prestige || prestige;
+      
       document.getElementById("townAscii").textContent = townAsciiArt[player.town];
       updateInventory();
       updateVorthalonButtonVisibility();
@@ -1608,6 +1708,424 @@ _,' 🔥   \_>\_/ 🔥   ',_
       if (show) renderEquipmentWindow();
     }
 
+    // Player stats with pet bonuses
+    function getPlayerAtk() {
+      let atk = 5 + player.gearLevel * 2 + skillState.power;
+      if (player.equipment.weapon) atk += 15;
+      
+      // Pet bonuses
+      if (pets.active && petTypes[pets.active]) {
+        const pet = petTypes[pets.active];
+        if (pet.bonus.attack) atk += pet.bonus.attack;
+        if (pet.bonus.all) atk += pet.bonus.all;
+      }
+      
+      return atk;
+    }
+
+    function getPlayerSpell() {
+      let spell = 8 + skillState.focus;
+      
+      // Pet bonuses
+      if (pets.active && petTypes[pets.active]) {
+        const pet = petTypes[pets.active];
+        if (pet.bonus.spell) spell += pet.bonus.spell;
+        if (pet.bonus.all) spell += pet.bonus.all;
+      }
+      
+      return spell;
+    }
+
+    function getPlayerDef() {
+      let def = 2 + Math.floor(player.gearLevel / 2);
+      
+      // Pet bonuses
+      if (pets.active && petTypes[pets.active]) {
+        const pet = petTypes[pets.active];
+        if (pet.bonus.defense) def += pet.bonus.defense;
+        if (pet.bonus.all) def += pet.bonus.all;
+      }
+      
+      return def;
+    }
+
+    // --- Pet System ---
+    function togglePetSystem() {
+      const card = document.getElementById('petCard');
+      const show = card.style.display === 'none' || card.style.display === '';
+      card.style.display = show ? 'block' : 'none';
+      if (show) renderPetSystem();
+    }
+
+    function renderPetSystem() {
+      const status = document.getElementById('petStatus');
+      const actions = document.getElementById('petActions');
+      
+      if (!pets.active) {
+        status.innerHTML = '<span style="color:#f99">No pet active</span>';
+        actions.innerHTML = `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Adopt a Pet</b></div>
+            <button onclick="adoptPet('Wolf Pup')">Wolf Pup (50 gold)</button>
+            <button onclick="adoptPet('Mystic Cat')">Mystic Cat (75 gold)</button>
+            <button onclick="adoptPet('Guardian Owl')">Guardian Owl (60 gold)</button>
+            <button onclick="adoptPet('Dragon Hatchling')">Dragon Hatchling (200 gold)</button>
+          </div>
+        `;
+      } else {
+        const pet = petTypes[pets.active];
+        const happiness = Math.max(0, pets.happiness);
+        status.innerHTML = `
+          <div style="white-space:pre;text-align:center;margin-bottom:4px">${pet.ascii}</div>
+          <div><b>${pets.active}</b> - Happiness: ${happiness}%</div>
+        `;
+        actions.innerHTML = `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Pet Actions</b></div>
+            <button onclick="feedPet()">Feed Pet Treat</button>
+            <button onclick="playWithPet()">Play with Pet</button>
+            <button onclick="dismissPet()">Dismiss Pet</button>
+          </div>
+        `;
+      }
+    }
+
+    function adoptPet(petName) {
+      const cost = { "Wolf Pup": 50, "Mystic Cat": 75, "Guardian Owl": 60, "Dragon Hatchling": 200 }[petName];
+      if (player.gold < cost) {
+        log("Not enough gold to adopt " + petName + "!");
+        return;
+      }
+      if (pets.owned.includes(petName)) {
+        log("You already own a " + petName + "!");
+        return;
+      }
+      
+      player.gold -= cost;
+      pets.owned.push(petName);
+      pets.active = petName;
+      pets.happiness = 100;
+      pets.lastFed = Date.now();
+      
+      log("Adopted " + petName + " for " + cost + " gold!");
+      updateInventory();
+      renderPetSystem();
+      checkAchievement("Pet Lover");
+      
+      // Update achievement progress for pet ownership
+      if (!achievements.progress["Pet Lover"]) achievements.progress["Pet Lover"] = 0;
+      achievements.progress["Pet Lover"]++;
+      checkAchievement("Pet Lover");
+    }
+
+    function feedPet() {
+      if (!pets.active) return;
+      if (!player.inventory["Pet Treat"] || player.inventory["Pet Treat"] <= 0) {
+        log("You need a Pet Treat to feed your pet!");
+        return;
+      }
+      
+      player.inventory["Pet Treat"]--;
+      pets.happiness = Math.min(100, pets.happiness + 25);
+      pets.lastFed = Date.now();
+      
+      log("Fed your pet! Happiness increased!");
+      updateInventory();
+      renderPetSystem();
+      updateDailyChallengeProgress("feed", 1);
+      
+      // Update daily challenge progress for pet feeding
+      updateDailyChallengeProgress("feed", 1);
+    }
+
+    function playWithPet() {
+      if (!pets.active) return;
+      pets.happiness = Math.min(100, pets.happiness + 15);
+      log("Played with your pet! Happiness increased!");
+      renderPetSystem();
+    }
+
+    function dismissPet() {
+      if (!pets.active) return;
+      pets.active = null;
+      log("Dismissed your pet.");
+      renderPetSystem();
+    }
+
+    // --- Crafting System ---
+    function toggleCrafting() {
+      const card = document.getElementById('craftingCard');
+      const show = card.style.display === 'none' || card.style.display === '';
+      card.style.display = show ? 'block' : 'none';
+      if (show) renderCrafting();
+    }
+
+    function renderCrafting() {
+      const recipes = document.getElementById('craftingRecipes');
+      let html = '';
+      
+      for (const [recipeName, recipe] of Object.entries(craftingRecipes)) {
+        const canCraft = canCraftRecipe(recipe);
+        const materialsList = Object.entries(recipe.materials)
+          .map(([item, count]) => `${item}: ${player.inventory[item] || 0}/${count}`)
+          .join(', ');
+        
+        html += `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>${recipeName}</b></div>
+            <div style="font-size:12px;color:#9f9">${recipe.result.name}</div>
+            <div style="font-size:11px;margin:4px 0">Materials: ${materialsList}</div>
+            <button onclick="craftItem('${recipeName}')" ${canCraft ? '' : 'disabled'}>
+              ${canCraft ? 'Craft' : 'Missing Materials'}
+            </button>
+          </div>
+        `;
+      }
+      
+      recipes.innerHTML = html;
+    }
+
+    function canCraftRecipe(recipe) {
+      for (const [item, count] of Object.entries(recipe.materials)) {
+        if (!player.inventory[item] || player.inventory[item] < count) return false;
+      }
+      return true;
+    }
+
+    function craftItem(recipeName) {
+      const recipe = craftingRecipes[recipeName];
+      if (!recipe) return;
+      
+      if (!canCraftRecipe(recipe)) {
+        log("Missing materials to craft " + recipeName + "!");
+        return;
+      }
+      
+      // Consume materials
+      for (const [item, count] of Object.entries(recipe.materials)) {
+        player.inventory[item] -= count;
+      }
+      
+      // Add crafted item
+      const result = recipe.result;
+      if (!player.inventory[result.name]) player.inventory[result.name] = 0;
+      player.inventory[result.name]++;
+      
+      log("Crafted " + result.name + "!");
+      updateInventory();
+      renderCrafting();
+      checkAchievement("Craftsman");
+      updateDailyChallengeProgress("craft", 1);
+      
+      // Update achievement progress for crafting
+      if (!achievements.progress["Craftsman"]) achievements.progress["Craftsman"] = 0;
+      achievements.progress["Craftsman"]++;
+      checkAchievement("Craftsman");
+    }
+
+    // --- Achievement System ---
+    function toggleAchievements() {
+      const card = document.getElementById('achievementsCard');
+      const show = card.style.display === 'none' || card.style.display === '';
+      card.style.display = show ? 'block' : 'none';
+      if (show) renderAchievements();
+    }
+
+    function renderAchievements() {
+      const list = document.getElementById('achievementsList');
+      let html = '';
+      
+      for (const [id, achievement] of Object.entries(achievementList)) {
+        const unlocked = achievements.unlocked.includes(id);
+        const progress = achievements.progress[id] || 0;
+        const hasProgress = achievement.progress;
+        
+        html += `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center;${unlocked ? 'background:#0a0a0a' : ''}">
+            <div><b>${achievement.name}</b></div>
+            <div style="font-size:12px;color:#9f9">${achievement.desc}</div>
+            ${hasProgress ? `<div style="font-size:11px;margin:4px 0">Progress: ${progress}/${achievement.progress.count}</div>` : ''}
+            <div style="font-size:11px;color:${unlocked ? '#9f9' : '#f99'}">
+              ${unlocked ? '✓ UNLOCKED' : '🔒 LOCKED'}
+            </div>
+          </div>
+        `;
+      }
+      
+      list.innerHTML = html;
+    }
+
+    function checkAchievement(achievementId) {
+      if (achievements.unlocked.includes(achievementId)) return;
+      
+      const achievement = achievementList[achievementId];
+      if (!achievement) return;
+      
+      if (achievement.progress) {
+        const progress = achievements.progress[achievementId] || 0;
+        if (progress < achievement.progress.count) return;
+      }
+      
+      // Unlock achievement
+      achievements.unlocked.push(achievementId);
+      const reward = achievement.reward;
+      
+      if (reward.gold) player.gold += reward.gold;
+      if (reward.xp) player.xp += reward.xp;
+      if (reward.item) {
+        if (!player.inventory[reward.item]) player.inventory[reward.item] = 0;
+        player.inventory[reward.item]++;
+      }
+      
+      log("🏆 ACHIEVEMENT UNLOCKED: " + achievement.name + "!");
+      if (reward.gold) log("Reward: " + reward.gold + " gold");
+      if (reward.xp) log("Reward: " + reward.xp + " XP");
+      if (reward.item) log("Reward: " + reward.item);
+      
+      updateInventory();
+      renderAchievements();
+    }
+
+    // --- Daily Challenges ---
+    function toggleDailyChallenges() {
+      const card = document.getElementById('dailyChallengesCard');
+      const show = card.style.display === 'none' || card.style.display === '';
+      card.style.display = show ? 'block' : 'none';
+      if (show) renderDailyChallenges();
+    }
+
+    function renderDailyChallenges() {
+      const status = document.getElementById('dailyChallengeStatus');
+      const actions = document.getElementById('dailyChallengesActions');
+      
+      if (!dailyChallenges.current) {
+        status.innerHTML = '<span style="color:#f99">No daily challenge active</span>';
+        actions.innerHTML = `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Get New Challenge</b></div>
+            <button onclick="startDailyChallenge()">Start Daily Challenge</button>
+          </div>
+        `;
+      } else {
+        const challenge = dailyChallengeTypes[dailyChallenges.current];
+        const progress = dailyChallenges.progress || 0;
+        const completed = progress >= challenge.target;
+        
+        status.innerHTML = `
+          <div><b>${challenge.name}</b></div>
+          <div style="font-size:12px;color:#9f9">${challenge.desc}</div>
+          <div style="font-size:11px;margin:4px 0">Progress: ${progress}/${challenge.target}</div>
+          <div style="font-size:11px;color:${completed ? '#9f9' : '#f99'}">
+            ${completed ? '✓ COMPLETED' : '🔄 IN PROGRESS'}
+          </div>
+        `;
+        
+        if (completed) {
+          actions.innerHTML = `
+            <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+              <div><b>Challenge Complete!</b></div>
+              <button onclick="claimDailyReward()">Claim Reward</button>
+            </div>
+          `;
+        } else {
+          actions.innerHTML = `
+            <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+              <div><b>Keep Going!</b></div>
+              <div style="font-size:11px;color:#9f9">Complete the challenge to earn rewards</div>
+            </div>
+          `;
+        }
+      }
+    }
+
+    function startDailyChallenge() {
+      const challengeKeys = Object.keys(dailyChallengeTypes);
+      const randomChallenge = challengeKeys[Math.floor(Math.random() * challengeKeys.length)];
+      
+      dailyChallenges.current = randomChallenge;
+      dailyChallenges.progress = 0;
+      dailyChallenges.lastRefresh = Date.now();
+      
+      log("🎯 New daily challenge started: " + dailyChallengeTypes[randomChallenge].name);
+      renderDailyChallenges();
+    }
+
+    function updateDailyChallengeProgress(type, amount = 1) {
+      if (!dailyChallenges.current) return;
+      
+      const challenge = dailyChallengeTypes[dailyChallenges.current];
+      if (challenge.type === type) {
+        dailyChallenges.progress = (dailyChallenges.progress || 0) + amount;
+        renderDailyChallenges();
+      }
+    }
+
+    function claimDailyReward() {
+      if (!dailyChallenges.current) return;
+      
+      const challenge = dailyChallengeTypes[dailyChallenges.current];
+      const reward = challenge.reward;
+      
+      if (reward.gold) player.gold += reward.gold;
+      if (reward.xp) player.xp += reward.xp;
+      if (reward.item) {
+        if (!player.inventory[reward.item]) player.inventory[reward.item] = 0;
+        player.inventory[reward.item]++;
+      }
+      
+      dailyChallenges.streak++;
+      dailyChallenges.current = null;
+      dailyChallenges.progress = 0;
+      
+      log("🎁 Daily challenge reward claimed!");
+      if (reward.gold) log("Gold: +" + reward.gold);
+      if (reward.xp) log("XP: +" + reward.xp);
+      if (reward.item) log("Item: " + reward.item);
+      
+      updateInventory();
+      renderDailyChallenges();
+    }
+
+    // --- Initialization Functions ---
+    function initAchievements() {
+      // Check for first blood achievement
+      if (achievements.unlocked.length === 0) {
+        checkAchievement("First Blood");
+      }
+    }
+
+    function initPets() {
+      // Pet happiness decay timer
+      setInterval(() => {
+        if (pets.active && petTypes[pets.active]) {
+          const pet = petTypes[pets.active];
+          pets.happiness = Math.max(0, pets.happiness - pet.happinessDecay);
+          if (pets.happiness <= 0) {
+            log("Your pet is very unhappy and has run away!");
+            pets.active = null;
+            renderPetSystem();
+          }
+        }
+      }, 60000); // Check every minute
+    }
+
+    function initCrafting() {
+      // Initialize crafting recipes
+      crafting.recipes = craftingRecipes;
+    }
+
+    function initDailyChallenges() {
+      // Check if daily challenge should refresh
+      const now = Date.now();
+      const lastRefresh = dailyChallenges.lastRefresh;
+      const oneDay = 24 * 60 * 60 * 1000;
+      
+      if (now - lastRefresh >= oneDay) {
+        dailyChallenges.current = null;
+        dailyChallenges.progress = 0;
+      }
+    }
+
     function renderEquipmentWindow() {
       const body = document.getElementById('equipmentPanelBody');
       if (!body) return;
@@ -1640,6 +2158,12 @@ _,' 🔥   \_>\_/ 🔥   ',_
     // Init
     refreshShop();
     setInterval(refreshShop, 300000);
+
+    // Initialize new systems
+    initAchievements();
+    initPets();
+    initCrafting();
+    initDailyChallenges();
 
     updateInventory();
     updateVorthalonButtonVisibility();
