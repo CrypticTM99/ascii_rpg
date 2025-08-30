@@ -336,6 +336,45 @@ ____ ____ ____ ____ ____ ____
       wave: 0
     };
 
+    // Achievement system state
+    let achievements = {
+      unlocked: [],
+      progress: {}
+    };
+
+    // Pet/Companion system state
+    let pets = {
+      active: null,
+      owned: [],
+      happiness: 100,
+      lastFed: Date.now()
+    };
+
+    // Crafting system state
+    let crafting = {
+      recipes: {},
+      discovered: []
+    };
+
+    // Daily challenge system
+    let dailyChallenges = {
+      current: null,
+      lastRefresh: Date.now(),
+      streak: 0
+    };
+
+    // Prestige system
+    let prestige = {
+      level: 0,
+      points: 0,
+      totalLifetime: {
+        gold: 0,
+        xp: 0,
+        quests: 0,
+        bosses: 0
+      }
+    };
+
     // Item drop system
     const itemPool = {
       // Junk items (common, low value)
@@ -375,7 +414,114 @@ ____ ____ ____ ____ ____ ____
       "Celestial Halberd": { value: 140, rarity: "rare", type: "boss_weapon" },
       "Aetheric Longbow": { value: 130, rarity: "rare", type: "boss_weapon" },
       "Singularity Mace": { value: 150, rarity: "rare", type: "boss_weapon" },
-      "Chrono Dagger": { value: 110, rarity: "rare", type: "boss_weapon" }
+      "Chrono Dagger": { value: 110, rarity: "rare", type: "boss_weapon" },
+
+      // Pet items
+      "Pet Treat": { value: 8, rarity: "uncommon", type: "pet" },
+      "Magic Collar": { value: 25, rarity: "rare", type: "pet" },
+      "Dragon Scale Harness": { value: 45, rarity: "epic", type: "pet" },
+
+      // Crafting materials
+      "Enchanted Thread": { value: 12, rarity: "uncommon", type: "crafting" },
+      "Mystic Gem": { value: 20, rarity: "rare", type: "crafting" },
+      "Ancient Rune": { value: 35, rarity: "epic", type: "crafting" },
+      "Void Essence": { value: 50, rarity: "epic", type: "crafting" },
+
+      // Prestige rewards
+      "Prestige Token": { value: 100, rarity: "epic", type: "prestige" },
+      "Eternal Shard": { value: 200, rarity: "epic", type: "prestige" }
+    };
+
+    // Pet system definitions
+    const petTypes = {
+      "Wolf Pup": {
+        ascii: `
+    /\\___/\\
+   (  o o  )
+   (  =^=  ) 
+    (______)
+       |  |
+      _|  |_`,
+        bonus: { attack: 2, type: "combat" },
+        happinessDecay: 0.5
+      },
+      "Mystic Cat": {
+        ascii: `
+    /\\___/\\
+   (  * *  )
+   (  =^=  ) 
+    (______)
+       |  |
+      _|  |_`,
+        bonus: { spell: 3, type: "magic" },
+        happinessDecay: 0.3
+      },
+      "Guardian Owl": {
+        ascii: `
+      /\\___/\\
+     (  o o  )
+     (  =^=  ) 
+      (______)
+         |  |
+        _|  |_`,
+        bonus: { defense: 1, type: "defense" },
+        happinessDecay: 0.4
+      },
+      "Dragon Hatchling": {
+        ascii: `
+    /\\___/\\
+   (  🔥🔥  )
+   (  =^=  ) 
+    (______)
+       |  |
+      _|  |_`,
+        bonus: { all: 1, type: "legendary" },
+        happinessDecay: 0.8
+      }
+    };
+
+    // Crafting recipes
+    const craftingRecipes = {
+      "Magic Sword": {
+        materials: { "Iron Ore": 3, "Enchanted Thread": 1, "Mystic Gem": 1 },
+        result: { name: "Magic Sword", value: 80, rarity: "rare", type: "crafted_weapon" },
+        difficulty: 2
+      },
+      "Healing Potion": {
+        materials: { "Warden Leaf": 2, "Cave Moss": 1, "Spider Silk": 1 },
+        result: { name: "Healing Potion", value: 25, rarity: "uncommon", type: "consumable" },
+        difficulty: 1
+      },
+      "Stealth Cloak": {
+        materials: { "Leather Scraps": 4, "Shadow Essence": 2, "Enchanted Thread": 1 },
+        result: { name: "Stealth Cloak", value: 60, rarity: "rare", type: "crafted_armor" },
+        difficulty: 2
+      },
+      "Arcane Staff": {
+        materials: { "Ancient Rune": 1, "Void Essence": 1, "Arcane Crystal": 3 },
+        result: { name: "Arcane Staff", value: 120, rarity: "epic", type: "crafted_weapon" },
+        difficulty: 3
+      }
+    };
+
+    // Achievement definitions
+    const achievementList = {
+      "First Blood": { name: "First Blood", desc: "Win your first battle", reward: { gold: 10, xp: 20 } },
+      "Rat Slayer": { name: "Rat Slayer", desc: "Defeat 10 rats", reward: { gold: 25, xp: 50 }, progress: { type: "kill", target: "rat", count: 10 } },
+      "Quest Master": { name: "Quest Master", desc: "Complete 5 quests", reward: { gold: 50, xp: 100 }, progress: { type: "quest", count: 5 } },
+      "Dungeon Crawler": { name: "Dungeon Crawler", desc: "Visit all dungeons", reward: { gold: 75, xp: 150 }, progress: { type: "dungeon", count: 3 } },
+      "Boss Slayer": { name: "Boss Slayer", desc: "Defeat Vorthalon", reward: { gold: 200, xp: 500, item: "Prestige Token" } },
+      "Craftsman": { name: "Craftsman", desc: "Craft 3 items", reward: { gold: 100, xp: 200 }, progress: { type: "craft", count: 3 } },
+      "Pet Lover": { name: "Pet Lover", desc: "Own 2 pets", reward: { gold: 150, xp: 300 }, progress: { type: "pet", count: 2 } },
+      "Arena Champion": { name: "Arena Champion", desc: "Win 10 arena battles", reward: { gold: 300, xp: 600 }, progress: { type: "arena", count: 10 } }
+    };
+
+    // Daily challenge types
+    const dailyChallengeTypes = {
+      "Kill Spree": { name: "Kill Spree", desc: "Defeat 20 enemies today", reward: { gold: 100, xp: 200, item: "Pet Treat" }, type: "kill", target: 20 },
+      "Quest Rush": { name: "Quest Rush", desc: "Complete 3 quests today", reward: { gold: 150, xp: 300, item: "Enchanted Thread" }, type: "quest", target: 3 },
+      "Crafting Day": { name: "Crafting Day", desc: "Craft 2 items today", reward: { gold: 200, xp: 400, item: "Mystic Gem" }, type: "craft", target: 2 },
+      "Pet Care": { name: "Pet Care", desc: "Feed your pet 5 times today", reward: { gold: 80, xp: 160, item: "Magic Collar" }, type: "feed", target: 5 }
     };
 
     const townAsciiArt = {
