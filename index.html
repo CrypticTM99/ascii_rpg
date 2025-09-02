@@ -169,6 +169,7 @@
       <button onclick="enterDungeon('Rat Caves')">Rat Caves</button>
       <button onclick="enterDungeon('Old Catacombs')">Old Catacombs</button>
       <button onclick="enterDungeon('Ashen Rift')">Ashen Rift</button>
+      <button onclick="startDungeonExploration()">Explore Dungeon</button>
     </div>
 
     <div class="card">
@@ -198,6 +199,24 @@ ____ ____ ____ ____ ____ ____
       <button onclick="travel('Ashfall')">To Ashfall</button>
       <button onclick="travel('Hearthglen')">To Hearthglen</button>
       <button id="challengeVorthalonBtn" onclick="challengeVorthalon()" style="display:none">Challenge Vorthalon</button>
+    </div>
+  </div>
+
+  <div class="card" id="dungeonExplorationCard" style="display:none; margin-top:8px; width:100%; max-width:1300px;">
+    <div class="ascii-art">
+ ____ ____ ____ ____ ____ ____ ____ ____ ____ ____ ____ ____ ____ ____ ____ ____ 
+||D |||U |||N |||G |||E |||O |||N |||  |||E |||X |||P |||L |||O |||R |||E |||R ||
+||__|||__|||__|||__|||__|||__|||__|||__|||__|||__|||__|||__|||__|||__|||__|||__||
+|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|
+    </div>
+    <h3>Dungeon Explorer</h3>
+    <div id="dungeonStatus" style="text-align:center;margin-bottom:6px;font-size:14px"></div>
+    <div id="dungeonMap" style="text-align:center;margin-bottom:10px;font-family:monospace;font-size:12px;color:#0f0"></div>
+    <div id="dungeonActions" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:10px"></div>
+    <div id="dungeonDescription" style="border:1px solid #0f0;background:#000;padding:8px;margin-bottom:8px;min-height:60px;font-size:13px;color:#9f9"></div>
+    <div id="dungeonLoot" style="border:1px solid #0f0;background:#000;padding:8px;margin-bottom:8px;min-height:40px;font-size:13px;color:#ff9;display:none"></div>
+    <div style="text-align:center">
+      <button onclick="exitDungeonExploration()" style="max-width:none;width:auto">Exit Dungeon</button>
     </div>
   </div>
 
@@ -359,8 +378,12 @@ ____ ____ ____ ____ ____ ____
         "Leather Scraps": 0,
         "Arcane Crystal": 0,
         "Shadow Essence": 0,
-        "Ember Core": 0
-       
+        "Ember Core": 0,
+        "Rusty Dagger": 0,
+        "Ancient Scroll": 0,
+        "Phoenix Feather": 0,
+        "Star Fragment": 0,
+        "Prestige Token": 0
       },
       equipment: {
         weapon: null
@@ -419,6 +442,20 @@ ____ ____ ____ ____ ____ ____
       current: null,
       lastRefresh: Date.now(),
       streak: 0
+    };
+
+    // Dungeon exploration system
+    let dungeonExploration = {
+      active: false,
+      currentDungeon: null,
+      currentFloor: 1,
+      currentRoom: 1,
+      maxFloors: 5,
+      roomsPerFloor: 4,
+      exploredRooms: [],
+      currentEncounter: null,
+      lootFound: [],
+      dialogueState: null
     };
 
     // Prestige system
@@ -837,8 +874,260 @@ _,' 🔥   \_>\_/ 🔥   ',_
     {}
 \_\(e_r)/_/
  _//"\\_
-  /   \ `
+  /   \ `,
+      "Rat King": `
+    ╔═══════════════╗
+    ║  ╔═══════════╗ ║
+    ║  ║  ╔═══════╗ ║ ║
+    ║  ║  ║  ╔═══╗ ║ ║ ║
+    ║  ║  ║  ║ @ ║ ║ ║ ║
+    ║  ║  ║  ╚═══╝ ║ ║ ║
+    ║  ║  ╚═══════╝ ║ ║
+    ║  ╚═══════════╝ ║
+    ╚═══════════════╝`,
+      "Lich King": `
+         ╔═══════════╗
+        ╱║  ╔═══════╗║╲
+       ╱ ║  ║  ╔═══╗ ║║ ╲
+      ╱  ║  ║  ║   ║ ║║  ╲
+     ╱   ║  ║  ║ @ ║ ║║   ╲
+    ╱    ║  ║  ╚═══╝ ║║    ╲
+   ╱     ║  ╚═══════╝║     ╲
+  ╱      ╚═══════════╝      ╲`
      };
+
+    // Dungeon exploration data structures
+    const dungeonData = {
+      "Rat Caves": {
+        name: "Rat Caves",
+        description: "Dark, damp tunnels filled with mutated rodents",
+        floors: [
+          {
+            name: "Entrance Chamber",
+            description: "The entrance to the caves. Water drips from the ceiling.",
+            encounters: [
+              { type: "combat", enemy: "Small Rat", dialogue: "A small rat scurries out from the shadows!" },
+              { type: "loot", item: "Rusty Dagger", description: "You find an old dagger covered in rust." },
+              { type: "dialogue", npc: "Lost Merchant", text: "I've been trapped here for days! Please help me escape!" },
+              { type: "combat", enemy: "Mutated Rat", dialogue: "A larger, more aggressive rat blocks your path!" }
+            ]
+          },
+          {
+            name: "Nesting Grounds",
+            description: "Piles of bones and debris mark the rat nesting area.",
+            encounters: [
+              { type: "combat", enemy: "Rat Gang", dialogue: "A group of rats attacks in formation!" },
+              { type: "loot", item: "Leather Scraps", description: "You discover some useful leather scraps." },
+              { type: "combat", enemy: "Giant Rat", dialogue: "A massive rat emerges from the shadows!" },
+              { type: "dialogue", npc: "Wounded Adventurer", text: "I was exploring deeper when I got ambushed. Be careful ahead!" }
+            ]
+          },
+          {
+            name: "Deep Tunnels",
+            description: "The air grows thick with an unnatural stench.",
+            encounters: [
+              { type: "combat", enemy: "Skitterspawn", dialogue: "Something unnatural skitters toward you!" },
+              { type: "loot", item: "Arcane Crystal", description: "A glowing crystal pulses with magical energy." },
+              { type: "dialogue", npc: "Ancient Spirit", text: "The corruption runs deep here. Only the brave may pass." },
+              { type: "combat", enemy: "Rat Gang(B)", dialogue: "A second wave of rats attacks!" }
+            ]
+          },
+          {
+            name: "The Warren",
+            description: "The heart of the rat infestation. The walls pulse with corruption.",
+            encounters: [
+              { type: "combat", enemy: "Mutated Rat", dialogue: "The final guardian blocks your way!" },
+              { type: "loot", item: "Iron Ore", description: "You find a vein of pure iron ore." },
+              { type: "dialogue", npc: "Rat King", text: "You dare enter my domain? Face my wrath!" },
+              { type: "boss", enemy: "Rat King", dialogue: "The massive Rat King emerges from the shadows!" }
+            ]
+          },
+          {
+            name: "Sanctuary",
+            description: "A hidden chamber untouched by corruption.",
+            encounters: [
+              { type: "loot", item: "Prestige Token", description: "A rare token of great value!" },
+              { type: "dialogue", npc: "Mysterious Figure", text: "You have proven yourself worthy. Take this gift." },
+              { type: "loot", item: "Ember Core", description: "A powerful magical core radiates heat." },
+              { type: "exit", description: "You have reached the deepest part of the caves." }
+            ]
+          }
+        ]
+      },
+      "Old Catacombs": {
+        name: "Old Catacombs",
+        description: "Ancient burial chambers filled with undead horrors",
+        floors: [
+          {
+            name: "Crypt Entrance",
+            description: "Stone sarcophagi line the walls. Dust fills the air.",
+            encounters: [
+              { type: "combat", enemy: "Skeleton", dialogue: "Bones rattle as a skeleton rises from its tomb!" },
+              { type: "loot", item: "Shadow Essence", description: "Dark energy swirls around a shadowy essence." },
+              { type: "dialogue", npc: "Grave Keeper", text: "These halls have been sealed for centuries. What brings you here?" },
+              { type: "combat", enemy: "Ghoul", dialogue: "A ghoul emerges from the shadows, its eyes glowing red!" }
+            ]
+          },
+          {
+            name: "Bone Chamber",
+            description: "Piles of bones form strange patterns on the floor.",
+            encounters: [
+              { type: "combat", enemy: "Zombie", dialogue: "A zombie shambles toward you, arms outstretched!" },
+              { type: "loot", item: "Ancient Scroll", description: "An old scroll contains forgotten knowledge." },
+              { type: "dialogue", npc: "Wraith", text: "The living should not disturb the dead. Turn back now." },
+              { type: "combat", enemy: "Necromancer", dialogue: "A necromancer raises his staff, dark magic swirling!" }
+            ]
+          },
+          {
+            name: "Shadow Halls",
+            description: "Darkness seems to move independently here.",
+            encounters: [
+              { type: "combat", enemy: "Wraith", dialogue: "A wraith materializes, its form shifting and ethereal!" },
+              { type: "loot", item: "Arcane Crystal", description: "A crystal pulses with necromantic energy." },
+              { type: "dialogue", npc: "Void Cat Knight", text: "I guard these halls. Prove your worth or perish." },
+              { type: "combat", enemy: "Shadow Beast", dialogue: "A creature of pure shadow lunges at you!" }
+            ]
+          },
+          {
+            name: "Necromancer's Sanctum",
+            description: "The air crackles with dark magic. Skulls line the walls.",
+            encounters: [
+              { type: "combat", enemy: "Angry Leeroy", dialogue: "LEEEEEEROY JENKINS! A berserker charges!" },
+              { type: "loot", item: "Shadow Essence", description: "Pure shadow essence swirls in a crystal vial." },
+              { type: "dialogue", npc: "Lich King", text: "You have come far, mortal. But this is where your journey ends!" },
+              { type: "boss", enemy: "Lich King", dialogue: "The Lich King rises from his throne, dark magic crackling!" }
+            ]
+          },
+          {
+            name: "Eternal Rest",
+            description: "A peaceful chamber where the dead find final rest.",
+            encounters: [
+              { type: "loot", item: "Prestige Token", description: "A token blessed by the spirits of the dead." },
+              { type: "dialogue", npc: "Ancient Spirit", text: "You have brought peace to these halls. Take this blessing." },
+              { type: "loot", item: "Ember Core", description: "A core that burns with eternal flame." },
+              { type: "exit", description: "You have found the deepest chamber of the catacombs." }
+            ]
+          }
+        ]
+      },
+      "Ashen Rift": {
+        name: "Ashen Rift",
+        description: "A volcanic rift filled with fire elementals and molten rock",
+        floors: [
+          {
+            name: "Ember Cavern",
+            description: "Heat radiates from the walls. Lava flows in the distance.",
+            encounters: [
+              { type: "combat", enemy: "Fire Imp", dialogue: "A fire imp cackles as it hurls flames at you!" },
+              { type: "loot", item: "Ember Core", description: "A core of pure fire energy burns in your hand." },
+              { type: "dialogue", npc: "Fire Elemental", text: "The rift calls to those brave enough to enter. Are you worthy?" },
+              { type: "combat", enemy: "Lava Serpent", dialogue: "A serpent of molten rock slithers toward you!" }
+            ]
+          },
+          {
+            name: "Molten Depths",
+            description: "The heat is intense. Molten rock flows like rivers.",
+            encounters: [
+              { type: "combat", enemy: "Ash Golem", dialogue: "A golem of ash and stone blocks your path!" },
+              { type: "loot", item: "Iron Ore", description: "Iron ore forged in the heart of the volcano." },
+              { type: "dialogue", npc: "Doomed Paladin", text: "I was once a knight, but the fire consumed my soul. Help me find peace." },
+              { type: "combat", enemy: "Magma Elemental", dialogue: "A creature of pure magma rises from the lava!" }
+            ]
+          },
+          {
+            name: "Phoenix Nest",
+            description: "The legendary phoenix once nested here. Feathers still burn with eternal flame.",
+            encounters: [
+              { type: "combat", enemy: "Phoenix", dialogue: "A phoenix rises from the ashes, its wings ablaze!" },
+              { type: "loot", item: "Phoenix Feather", description: "A feather that burns with eternal fire." },
+              { type: "dialogue", npc: "Crystal Golem", text: "I guard the deepest secrets of the rift. Prove yourself." },
+              { type: "combat", enemy: "Crystal Golem", dialogue: "A golem of pure crystal reflects the fire's light!" }
+            ]
+          },
+          {
+            name: "Vorthalon's Throne",
+            description: "The seat of power for the Starbinder of Endlight.",
+            encounters: [
+              { type: "combat", enemy: "Fire Imp", dialogue: "The final guardians attack!" },
+              { type: "loot", item: "Star Fragment", description: "A fragment of a fallen star glows with cosmic energy." },
+              { type: "dialogue", npc: "Vorthalon, Starbinder of Endlight", text: "You have come to challenge me? Very well, mortal. Face the power of the stars!" },
+              { type: "boss", enemy: "Vorthalon, Starbinder of Endlight", dialogue: "Vorthalon rises, cosmic energy crackling around him!" }
+            ]
+          },
+          {
+            name: "Stellar Observatory",
+            description: "A chamber that opens to the cosmos itself.",
+            encounters: [
+              { type: "loot", item: "Prestige Token", description: "A token blessed by the stars themselves." },
+              { type: "dialogue", npc: "Cosmic Entity", text: "You have proven yourself worthy of cosmic power. Use it wisely." },
+              { type: "loot", item: "Ember Core", description: "A core that burns with the fire of a thousand suns." },
+              { type: "exit", description: "You have reached the heart of the stellar rift." }
+            ]
+          }
+        ]
+      }
+    };
+
+    // Loot ASCII art
+    const lootAscii = {
+      "Rusty Dagger": `
+    ╔═══════╗
+    ║   ╔═══╝
+    ║   ║
+    ╚═══╝`,
+      "Leather Scraps": `
+    ░░░░░░░░
+    ░░░░░░░░
+    ░░░░░░░░`,
+      "Arcane Crystal": `
+      ╔═══════╗
+     ╱║  ╔═══╗║╲
+    ╱ ║  ║   ║║ ╲
+   ╱  ║  ╚═══╝║  ╲
+  ╱   ╚═══════╝   ╲`,
+      "Iron Ore": `
+    ████████
+    ████████
+    ████████`,
+      "Shadow Essence": `
+    ╔═══════╗
+    ║  ╔═══╗ ║
+    ║  ║   ║ ║
+    ║  ╚═══╝ ║
+    ╚═══════╝`,
+      "Ember Core": `
+      ╔═══════╗
+     ╱║  ╔═══╗║╲
+    ╱ ║  ║   ║║ ╲
+   ╱  ║  ╚═══╝║  ╲
+  ╱   ╚═══════╝   ╲`,
+      "Prestige Token": `
+    ╔═══════════╗
+    ║  ╔═══════╗ ║
+    ║  ║   ╔═══╝ ║
+    ║  ║   ║     ║
+    ║  ╚═══╝     ║
+    ╚═══════════╝`,
+      "Ancient Scroll": `
+    ╔═══════════╗
+    ║           ║
+    ║  ╔═══════╗ ║
+    ║  ║       ║ ║
+    ║  ╚═══════╝ ║
+    ╚═══════════╝`,
+      "Phoenix Feather": `
+    ╔═══════╗
+    ║  ╔═══╗ ║
+    ║  ║   ║ ║
+    ║  ╚═══╝ ║
+    ╚═══════╝`,
+      "Star Fragment": `
+      ╔═══════╗
+     ╱║  ╔═══╗║╲
+    ╱ ║  ║   ║║ ╲
+   ╱  ║  ╚═══╝║  ╲
+  ╱   ╚═══════╝   ╲`
+    };
 
     function log(message) {
       const logBox = document.getElementById('log');
@@ -1213,6 +1502,316 @@ _,' 🔥   \_>\_/ 🔥   ',_
       inCombat = true;
     }
 
+    // Dungeon Exploration Functions
+    function startDungeonExploration() {
+      if (inCombat) {
+        log("You cannot explore while in combat!");
+        return;
+      }
+      
+      // Show dungeon selection
+      const dungeonNames = Object.keys(dungeonData);
+      const actionsDiv = document.getElementById("dungeonActions");
+      actionsDiv.innerHTML = "";
+      
+      dungeonNames.forEach(dungeonName => {
+        const button = document.createElement("button");
+        button.textContent = dungeonName;
+        button.onclick = () => selectDungeonForExploration(dungeonName);
+        actionsDiv.appendChild(button);
+      });
+      
+      document.getElementById("dungeonStatus").textContent = "Select a dungeon to explore:";
+      document.getElementById("dungeonDescription").textContent = "Choose your destination carefully. Each dungeon offers unique challenges and rewards.";
+      document.getElementById("dungeonMap").textContent = "";
+      document.getElementById("dungeonLoot").style.display = "none";
+      document.getElementById("dungeonExplorationCard").style.display = "block";
+    }
+
+    function selectDungeonForExploration(dungeonName) {
+      dungeonExploration.active = true;
+      dungeonExploration.currentDungeon = dungeonName;
+      dungeonExploration.currentFloor = 1;
+      dungeonExploration.currentRoom = 1;
+      dungeonExploration.exploredRooms = [];
+      dungeonExploration.currentEncounter = null;
+      dungeonExploration.lootFound = [];
+      dungeonExploration.dialogueState = null;
+      
+      const dungeon = dungeonData[dungeonName];
+      document.getElementById("dungeonStatus").textContent = `${dungeonName} - Floor ${dungeonExploration.currentFloor}, Room ${dungeonExploration.currentRoom}`;
+      document.getElementById("dungeonDescription").textContent = dungeon.description;
+      
+      generateDungeonMap();
+      enterCurrentRoom();
+    }
+
+    function generateDungeonMap() {
+      const mapDiv = document.getElementById("dungeonMap");
+      const dungeon = dungeonData[dungeonExploration.currentDungeon];
+      const currentFloor = dungeon.floors[dungeonExploration.currentFloor - 1];
+      
+      let mapText = `Floor ${dungeonExploration.currentFloor}: ${currentFloor.name}\n`;
+      mapText += "┌─────────────────┐\n";
+      
+      for (let room = 1; room <= dungeonExploration.roomsPerFloor; room++) {
+        const roomId = `${dungeonExploration.currentFloor}-${room}`;
+        const isExplored = dungeonExploration.exploredRooms.includes(roomId);
+        const isCurrent = room === dungeonExploration.currentRoom;
+        
+        if (isCurrent) {
+          mapText += "│ [@] ";
+        } else if (isExplored) {
+          mapText += "│ [✓] ";
+        } else {
+          mapText += "│ [ ] ";
+        }
+        
+        if (room % 4 === 0) {
+          mapText += "│\n";
+        }
+      }
+      
+      if (dungeonExploration.roomsPerFloor % 4 !== 0) {
+        mapText += "│\n";
+      }
+      
+      mapText += "└─────────────────┘";
+      mapDiv.textContent = mapText;
+    }
+
+    function enterCurrentRoom() {
+      const dungeon = dungeonData[dungeonExploration.currentDungeon];
+      const currentFloor = dungeon.floors[dungeonExploration.currentFloor - 1];
+      const roomId = `${dungeonExploration.currentFloor}-${dungeonExploration.currentRoom}`;
+      
+      // Mark room as explored
+      if (!dungeonExploration.exploredRooms.includes(roomId)) {
+        dungeonExploration.exploredRooms.push(roomId);
+      }
+      
+      // Get random encounter for this room
+      const encounters = currentFloor.encounters;
+      const encounter = encounters[Math.floor(Math.random() * encounters.length)];
+      dungeonExploration.currentEncounter = encounter;
+      
+      // Update UI
+      document.getElementById("dungeonStatus").textContent = 
+        `${dungeonExploration.currentDungeon} - Floor ${dungeonExploration.currentFloor}, Room ${dungeonExploration.currentRoom}`;
+      document.getElementById("dungeonDescription").textContent = currentFloor.description;
+      
+      generateDungeonMap();
+      handleEncounter(encounter);
+    }
+
+    function handleEncounter(encounter) {
+      const actionsDiv = document.getElementById("dungeonActions");
+      actionsDiv.innerHTML = "";
+      
+      switch (encounter.type) {
+        case "combat":
+          const combatBtn = document.createElement("button");
+          combatBtn.textContent = "Fight!";
+          combatBtn.onclick = () => startDungeonCombat(encounter);
+          actionsDiv.appendChild(combatBtn);
+          break;
+          
+        case "loot":
+          const lootBtn = document.createElement("button");
+          lootBtn.textContent = "Search";
+          lootBtn.onclick = () => discoverLoot(encounter);
+          actionsDiv.appendChild(lootBtn);
+          break;
+          
+        case "dialogue":
+          const dialogueBtn = document.createElement("button");
+          dialogueBtn.textContent = "Talk";
+          dialogueBtn.onclick = () => startDialogue(encounter);
+          actionsDiv.appendChild(dialogueBtn);
+          break;
+          
+        case "boss":
+          const bossBtn = document.createElement("button");
+          bossBtn.textContent = "Challenge Boss!";
+          bossBtn.onclick = () => startBossFight(encounter);
+          actionsDiv.appendChild(bossBtn);
+          break;
+          
+        case "exit":
+          const exitBtn = document.createElement("button");
+          exitBtn.textContent = "Continue Deeper";
+          exitBtn.onclick = () => advanceToNextFloor();
+          actionsDiv.appendChild(exitBtn);
+          break;
+      }
+      
+      // Add navigation buttons
+      const navDiv = document.createElement("div");
+      navDiv.style.width = "100%";
+      navDiv.style.marginTop = "8px";
+      
+      if (dungeonExploration.currentRoom > 1) {
+        const prevBtn = document.createElement("button");
+        prevBtn.textContent = "← Previous Room";
+        prevBtn.onclick = () => moveToRoom(dungeonExploration.currentRoom - 1);
+        navDiv.appendChild(prevBtn);
+      }
+      
+      if (dungeonExploration.currentRoom < dungeonExploration.roomsPerFloor) {
+        const nextBtn = document.createElement("button");
+        nextBtn.textContent = "Next Room →";
+        nextBtn.onclick = () => moveToRoom(dungeonExploration.currentRoom + 1);
+        navDiv.appendChild(nextBtn);
+      }
+      
+      actionsDiv.appendChild(navDiv);
+    }
+
+    function startDungeonCombat(encounter) {
+      const enemy = encounter.enemy;
+      const hp = 30 + player.level * 5;
+      
+      currentEnemy = { 
+        name: enemy, 
+        hp: hp, 
+        dungeon: dungeonExploration.currentDungeon, 
+        arena: false, 
+        defeated: false,
+        isDungeonExploration: true
+      };
+      
+      log(encounter.dialogue);
+      log("A " + enemy + " appears! HP: " + currentEnemy.hp);
+      document.getElementById("enemyBox").textContent = enemyAscii[enemy] || "";
+      inCombat = true;
+      
+      // Hide dungeon exploration UI during combat
+      document.getElementById("dungeonExplorationCard").style.display = "none";
+    }
+
+    function startBossFight(encounter) {
+      const enemy = encounter.enemy;
+      let hp = 100 + player.level * 10;
+      
+      // Special handling for Vorthalon
+      if (enemy === "Vorthalon, Starbinder of Endlight") {
+        hp = 200;
+      }
+      
+      currentEnemy = { 
+        name: enemy, 
+        hp: hp, 
+        dungeon: dungeonExploration.currentDungeon, 
+        arena: false, 
+        defeated: false,
+        isDungeonExploration: true,
+        isBoss: true
+      };
+      
+      log(encounter.dialogue);
+      log("A " + enemy + " appears! HP: " + currentEnemy.hp);
+      document.getElementById("enemyBox").textContent = enemyAscii[enemy] || "";
+      inCombat = true;
+      
+      // Hide dungeon exploration UI during combat
+      document.getElementById("dungeonExplorationCard").style.display = "none";
+    }
+
+    function discoverLoot(encounter) {
+      const item = encounter.item;
+      const description = encounter.description;
+      
+      // Add to inventory
+      if (!player.inventory[item]) {
+        player.inventory[item] = 0;
+      }
+      player.inventory[item]++;
+      
+      // Show loot with ASCII art
+      const lootDiv = document.getElementById("dungeonLoot");
+      lootDiv.innerHTML = `
+        <div style="text-align:center;margin-bottom:8px">
+          <div style="font-family:monospace;color:#ff9;margin-bottom:4px">${lootAscii[item] || ""}</div>
+          <div><strong>Found: ${item}</strong></div>
+          <div style="font-size:12px;color:#9f9">${description}</div>
+        </div>
+      `;
+      lootDiv.style.display = "block";
+      
+      // Add to loot found list
+      dungeonExploration.lootFound.push(item);
+      
+      log(`You found: ${item}`);
+      log(description);
+      
+      // Clear actions and show continue button
+      const actionsDiv = document.getElementById("dungeonActions");
+      actionsDiv.innerHTML = "";
+      
+      const continueBtn = document.createElement("button");
+      continueBtn.textContent = "Continue";
+      continueBtn.onclick = () => {
+        lootDiv.style.display = "none";
+        enterCurrentRoom();
+      };
+      actionsDiv.appendChild(continueBtn);
+    }
+
+    function startDialogue(encounter) {
+      const npc = encounter.npc;
+      const text = encounter.text;
+      
+      document.getElementById("dungeonDescription").innerHTML = `
+        <div style="color:#9f9;margin-bottom:8px"><strong>${npc}:</strong></div>
+        <div style="color:#fff">"${text}"</div>
+      `;
+      
+      // Clear actions and show dialogue options
+      const actionsDiv = document.getElementById("dungeonActions");
+      actionsDiv.innerHTML = "";
+      
+      const continueBtn = document.createElement("button");
+      continueBtn.textContent = "Continue";
+      continueBtn.onclick = () => {
+        // Restore normal description
+        const dungeon = dungeonData[dungeonExploration.currentDungeon];
+        const currentFloor = dungeon.floors[dungeonExploration.currentFloor - 1];
+        document.getElementById("dungeonDescription").textContent = currentFloor.description;
+        enterCurrentRoom();
+      };
+      actionsDiv.appendChild(continueBtn);
+      
+      log(`${npc}: "${text}"`);
+    }
+
+    function moveToRoom(roomNumber) {
+      dungeonExploration.currentRoom = roomNumber;
+      enterCurrentRoom();
+    }
+
+    function advanceToNextFloor() {
+      if (dungeonExploration.currentFloor < dungeonExploration.maxFloors) {
+        dungeonExploration.currentFloor++;
+        dungeonExploration.currentRoom = 1;
+        log(`You advance to floor ${dungeonExploration.currentFloor}!`);
+        enterCurrentRoom();
+      } else {
+        log("You have reached the deepest part of the dungeon!");
+        exitDungeonExploration();
+      }
+    }
+
+    function exitDungeonExploration() {
+      dungeonExploration.active = false;
+      document.getElementById("dungeonExplorationCard").style.display = "none";
+      log("You exit the dungeon exploration.");
+      
+      // Show summary of loot found
+      if (dungeonExploration.lootFound.length > 0) {
+        log(`Dungeon exploration complete! Found: ${dungeonExploration.lootFound.join(", ")}`);
+      }
+    }
+
     function combat(action) {
       // strict guard: no actions when no valid target or already defeated
       if (!currentEnemy || !inCombat || currentEnemy.hp <= 0 || currentEnemy.defeated) {
@@ -1283,6 +1882,23 @@ _,' 🔥   \_>\_/ 🔥   ',_
           checkAchievement("Boss Slayer");
         } else if (currentEnemy.arena) {
           handleArenaWin();
+        } else if (currentEnemy.isDungeonExploration) {
+          // Handle dungeon exploration combat rewards
+          if (currentEnemy.isBoss) {
+            const drops = calculateDrop(currentEnemy.dungeon, player.level);
+            grantDrops(drops);
+            log("Boss defeated! You can now advance to the next floor.");
+          } else {
+            const drops = calculateDrop(currentEnemy.dungeon, player.level);
+            grantDrops(drops);
+          }
+          
+          // Return to dungeon exploration
+          if (dungeonExploration.active) {
+            document.getElementById("dungeonExplorationCard").style.display = "block";
+            // Continue with current room exploration
+            enterCurrentRoom();
+          }
         } else {
           const drops = calculateDrop(currentEnemy.dungeon, player.level);
           grantDrops(drops);
@@ -1316,6 +1932,10 @@ _,' 🔥   \_>\_/ 🔥   ',_
             arena.mode = null;
             arena.wave = 0;
             renderArenaUI();
+          }
+          // Exit dungeon exploration if active
+          if (dungeonExploration.active) {
+            exitDungeonExploration();
           }
         }
       }
