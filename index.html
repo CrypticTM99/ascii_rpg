@@ -12,31 +12,37 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
     }
     h1 {
       text-align: center;
-      margin-bottom: 15px;
+      margin: 5px 0;
+      font-size: 1.2em;
     }
     #main {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
       width: 100%;
-      max-width: 1500px;
+      max-width: 1600px;
       align-items: stretch;
+      height: calc(100vh - 120px);
     }
     .card {
       border: 2px solid #0f0;
       border-radius: 2px;
-      padding: 12px;
+      padding: 8px;
       background: #000;
       box-shadow: 0 0 8px #060;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      min-height: 320px;
+      min-height: 280px;
       height: 100%;
+      overflow-y: auto;
     }
     .ascii-art {
       white-space: pre;
@@ -46,15 +52,16 @@
       font-size: 16px;
     }
     button {
-      margin: 4px 0;
-      padding: 6px 12px;
+      margin: 2px 0;
+      padding: 4px 8px;
       background: #020;
       color: #0f0;
       border: 1px solid #0f0;
-      border-radius: 18px;
+      border-radius: 12px;
       cursor: pointer;
-      width: 85%;
-      max-width: 100px;
+      width: 90%;
+      max-width: 90px;
+      font-size: 0.85em;
     }
     button:hover {
       background: #030;
@@ -65,12 +72,13 @@
       width: 100%;
       max-width: 100%;
       border: 1.5px dashed rgb(52, 142, 162);
-      min-height: 120px;
+      min-height: 80px;
+      max-height: 100px;
       text-align: center;
       white-space: pre;
-      font-size: 14px;
-      padding: 10px;
-      margin-top: 10px;
+      font-size: 12px;
+      padding: 6px;
+      margin-top: 6px;
       overflow-y: auto;
     }
     #log {
@@ -79,11 +87,11 @@
       width: 100%;
       max-width: 100%;
       border: 1.5px dashed rgb(52, 142, 162);
-      height: 160px;
-      max-height: 160px;
-      font-size: 14px;
-      padding: 10px;
-      margin-top: 10px;
+      height: 100px;
+      max-height: 100px;
+      font-size: 11px;
+      padding: 6px;
+      margin-top: 6px;
       overflow-y: auto;
       display: block;
       text-align: left;
@@ -95,22 +103,25 @@
       word-break: break-word;
     }
     #inventory, #shop {
-      margin-top: -10px;
+      margin-top: 4px;
       border: 1px solid #0f0;
-      padding: 10px;
+      padding: 6px;
       background: #000000;
       width: 100%;
-      max-width: 1300px;
+      max-width: 100%;
+      height: 120px;
+      overflow-y: auto;
     }
     #inventory h3, #shop h3 {
-      margin-top: 0;
+      margin: 0 0 4px 0;
       text-align: center;
+      font-size: 1em;
     }
     .inventory-grid, .shop-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(65px, 1fr));
-      gap: 10px;
-      font-size: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+      gap: 6px;
+      font-size: 10px;
     }
     .gear-visual {
       font-size: 16px;
@@ -155,6 +166,9 @@
       <button onclick="toggleCrafting()">Crafting</button>
       <button onclick="toggleAchievements()">Achievements</button>
       <button onclick="toggleDailyChallenges()">Daily Challenges</button>
+      <button onclick="toggleFishing()">Fishing</button>
+      <button onclick="toggleHunting()">Hunting</button>
+      <button onclick="toggleHousing()">Player Housing</button>
       <button id="arenaBtn" onclick="toggleArena()" style="display:none">Ashfall Arena</button>
     </div>
 
@@ -198,7 +212,9 @@ ____ ____ ____ ____ ____ ____
       <h3>|</h3>
       <button onclick="travel('Ashfall')">To Ashfall</button>
       <button onclick="travel('Hearthglen')">To Hearthglen</button>
+      <button id="travelVoidRealmBtn" onclick="travel('Void Realm')" style="display:none">To Void Realm</button>
       <button id="challengeVorthalonBtn" onclick="challengeVorthalon()" style="display:none">Challenge Vorthalon</button>
+      <button id="challengeMalacharBtn" onclick="challengeMalachar()" style="display:none">Challenge Malachar</button>
     </div>
   </div>
 
@@ -255,21 +271,36 @@ ____ ____ ____ ____ ____ ____
       </select>
       <span style="margin-left:10px">Unspent Points: <b id="skillPointsLabel">0</b></span>
     </div>
-    <div class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); width:100%">
-      <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+    <div class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); width:100%">
+      <div style="border:1px dashed #0f0;padding:4px;text-align:center">
         <div><b>Power</b> (+1 attack damage / point)</div>
         <div>Current: <span id="skillPowerVal">0</span></div>
         <button onclick="allocatePoint('power')">Allocate</button>
       </div>
-      <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+      <div style="border:1px dashed #0f0;padding:4px;text-align:center">
         <div><b>Focus</b> (+1 spell damage / point)</div>
         <div>Current: <span id="skillFocusVal">0</span></div>
         <button onclick="allocatePoint('focus')">Allocate</button>
       </div>
-      <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+      <div style="border:1px dashed #0f0;padding:4px;text-align:center">
         <div><b>Vitality</b> (+5 max HP / point)</div>
         <div>Current: <span id="skillVitalityVal">0</span></div>
         <button onclick="allocatePoint('vitality')">Allocate</button>
+      </div>
+      <div style="border:1px dashed #0f0;padding:4px;text-align:center">
+        <div><b>Agility</b> (+1% crit chance / point)</div>
+        <div>Current: <span id="skillAgilityVal">0</span></div>
+        <button onclick="allocatePoint('agility')">Allocate</button>
+      </div>
+      <div style="border:1px dashed #0f0;padding:4px;text-align:center">
+        <div><b>Defense</b> (+1 armor / point)</div>
+        <div>Current: <span id="skillDefenseVal">0</span></div>
+        <button onclick="allocatePoint('defense')">Allocate</button>
+      </div>
+      <div style="border:1px dashed #0f0;padding:4px;text-align:center">
+        <div><b>Luck</b> (+1% drop rate / point)</div>
+        <div>Current: <span id="skillLuckVal">0</span></div>
+        <button onclick="allocatePoint('luck')">Allocate</button>
       </div>
     </div>
   </div>
@@ -342,6 +373,57 @@ ____ ____ ____ ____ ____ ____
     <div id="dailyChallengeActions" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"></div>
   </div>
 
+  <div class="card" id="fishingCard" style="display:none; margin-top:8px; width:100%; max-width:1300px;">
+    <div class="ascii-art">
+      🎣    🐟
+     /|\\   /|\\
+    ( o ) ( o )
+     \\|/   \\|/
+      🏞️    🌊
+    </div>
+    <h3>Fishing Spot</h3>
+    <div id="fishingStatus" style="text-align:center;margin-bottom:6px"></div>
+    <div id="fishingActions" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));"></div>
+    <div id="fishingProgress" style="display:none; margin-top:8px; text-align:center">
+      <div style="border:1px solid #0f0; background:#000; height:20px; position:relative">
+        <div id="fishingBar" style="background:#0f0; height:100%; width:0%; transition:width 0.1s"></div>
+        <div style="position:absolute; top:2px; left:50%; transform:translateX(-50%); color:#000; font-weight:bold">Fishing...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="huntingCard" style="display:none; margin-top:8px; width:100%; max-width:1300px;">
+    <div class="ascii-art">
+      🏹    🦌
+     /|\\   /|\\
+    ( o ) ( o )
+     \\|/   \\|/
+      🌲    🐗
+    </div>
+    <h3>Hunting Grounds</h3>
+    <div id="huntingStatus" style="text-align:center;margin-bottom:6px"></div>
+    <div id="huntingActions" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));"></div>
+    <div id="huntingProgress" style="display:none; margin-top:8px; text-align:center">
+      <div style="border:1px solid #0f0; background:#000; height:20px; position:relative">
+        <div id="huntingBar" style="background:#0f0; height:100%; width:0%; transition:width 0.1s"></div>
+        <div style="position:absolute; top:2px; left:50%; transform:translateX(-50%); color:#000; font-weight:bold">Hunting...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="housingCard" style="display:none; margin-top:8px; width:100%; max-width:1300px;">
+    <div class="ascii-art">
+      🏠    🛏️
+     /|\\   /|\\
+    ( o ) ( o )
+     \\|/   \\|/
+      🪑    🔥
+    </div>
+    <h3>Player Housing</h3>
+    <div id="housingStatus" style="text-align:center;margin-bottom:6px"></div>
+    <div id="housingActions" class="inventory-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));"></div>
+  </div>
+
   <div id="inventory" style="position:relative">
     <h3>Inventory</h3>
     <div class="inventory-grid" id="inventoryGrid"></div>
@@ -405,7 +487,10 @@ ____ ____ ____ ____ ____ ____
       pointsUnspent: 0,
       power: 0,
       focus: 0,
-      vitality: 0
+      vitality: 0,
+      agility: 0,
+      defense: 0,
+      luck: 0
     };
 
     // Arena system state
@@ -470,6 +555,32 @@ ____ ____ ____ ____ ____ ____
       }
     };
 
+    // Fishing system state
+    let fishing = {
+      active: false,
+      progress: 0,
+      difficulty: 1,
+      lastCatch: 0,
+      totalCaught: 0
+    };
+
+    // Hunting system state
+    let hunting = {
+      active: false,
+      progress: 0,
+      difficulty: 1,
+      lastHunt: 0,
+      totalHunted: 0
+    };
+
+    // Housing system state
+    let housing = {
+      level: 1,
+      rooms: ['bedroom'],
+      decorations: [],
+      upgrades: []
+    };
+
     // Item drop system
     const itemPool = {
       // Junk items (common, low value)
@@ -511,6 +622,13 @@ ____ ____ ____ ____ ____ ____
       "Singularity Mace": { value: 150, rarity: "rare", type: "boss_weapon" },
       "Chrono Dagger": { value: 110, rarity: "rare", type: "boss_weapon" },
 
+      // Boss-only weapons (Malachar)
+      "Void Reaper": { value: 200, rarity: "epic", type: "boss_weapon" },
+      "Shadow Blade": { value: 180, rarity: "epic", type: "boss_weapon" },
+      "Darkness Staff": { value: 190, rarity: "epic", type: "boss_weapon" },
+      "Void Hammer": { value: 220, rarity: "epic", type: "boss_weapon" },
+      "Soul Eater": { value: 170, rarity: "epic", type: "boss_weapon" },
+
       // Pet items
       "Pet Treat": { value: 8, rarity: "uncommon", type: "pet" },
       "Magic Collar": { value: 25, rarity: "rare", type: "pet" },
@@ -524,7 +642,25 @@ ____ ____ ____ ____ ____ ____
 
       // Prestige rewards
       "Prestige Token": { value: 100, rarity: "epic", type: "prestige" },
-      "Eternal Shard": { value: 200, rarity: "epic", type: "prestige" }
+      "Eternal Shard": { value: 200, rarity: "epic", type: "prestige" },
+
+      // Fishing items
+      "Common Fish": { value: 3, rarity: "common", type: "fish" },
+      "Silver Fish": { value: 8, rarity: "uncommon", type: "fish" },
+      "Golden Fish": { value: 15, rarity: "rare", type: "fish" },
+      "Rainbow Trout": { value: 25, rarity: "rare", type: "fish" },
+      "Ancient Carp": { value: 40, rarity: "epic", type: "fish" },
+      "Pearl": { value: 12, rarity: "uncommon", type: "treasure" },
+      "Rusty Hook": { value: 2, rarity: "common", type: "junk" },
+
+      // Hunting items
+      "Rabbit Pelt": { value: 4, rarity: "common", type: "pelt" },
+      "Deer Hide": { value: 10, rarity: "uncommon", type: "pelt" },
+      "Wolf Fur": { value: 18, rarity: "rare", type: "pelt" },
+      "Bear Claw": { value: 30, rarity: "rare", type: "trophy" },
+      "Eagle Feather": { value: 8, rarity: "uncommon", type: "trophy" },
+      "Boar Tusk": { value: 15, rarity: "uncommon", type: "trophy" },
+      "Antler": { value: 20, rarity: "rare", type: "trophy" }
     };
 
     // Pet system definitions
@@ -633,6 +769,23 @@ TOWN OF
   /_/    \\_\
                              
                              
+      `,
+      "Void Realm": `
+    ╔══════════════════════════════════════╗
+    ║  ██████████████████████████████████  ║
+    ║  ██                              ██  ║
+    ║  ██    VOID REALM - LEVEL 20+    ██  ║
+    ║  ██                              ██  ║
+    ║  ██  ╔════════════════════════╗  ██  ║
+    ║  ██  ║  ████████████████████  ║  ██  ║
+    ║  ██  ║  ██                ██  ║  ██  ║
+    ║  ██  ║  ██  DANGER ZONE   ██  ║  ██  ║
+    ║  ██  ║  ██                ██  ║  ██  ║
+    ║  ██  ║  ████████████████████  ║  ██  ║
+    ║  ██  ╚════════════════════════╝  ██  ║
+    ║  ██                              ██  ║
+    ║  ██████████████████████████████████  ║
+    ╚══════════════════════════════════════╝
       `
     };
 
@@ -863,6 +1016,23 @@ _,' 🔥   \_>\_/ 🔥   ',_
   || |                      █                       | ||
   || |       Vorthalon, Starbinder of Endlight      | ||
   \\_|________________________________________________|_/
+`,
+      "Malachar, Void Devourer": `
+    ╔══════════════════════════════════════╗
+    ║  ██████████████████████████████████  ║
+    ║  ██                              ██  ║
+    ║  ██    ╔══════════════════════╗   ██  ║
+    ║  ██    ║  ██████████████████  ║   ██  ║
+    ║  ██    ║  ██            ██  ║   ██  ║
+    ║  ██    ║  ██  Malachar  ██  ║   ██  ║
+    ║  ██    ║  ██  Void      ██  ║   ██  ║
+    ║  ██    ║  ██  Devourer  ██  ║   ██  ║
+    ║  ██    ║  ██            ██  ║   ██  ║
+    ║  ██    ║  ██████████████████  ║   ██  ║
+    ║  ██    ╚══════════════════════╝   ██  ║
+    ║  ██                              ██  ║
+    ║  ██████████████████████████████████  ║
+    ╚══════════════════════════════════════╝
 `,
       "Cave Stalker": `[o'_'o]
       :-:
@@ -1370,6 +1540,22 @@ _,' 🔥   \_>\_/ 🔥   ',_
       }
     }
 
+    function updateMalacharButtonVisibility() {
+      const btn = document.getElementById('challengeMalacharBtn');
+      if (btn) {
+        const canChallenge = player.town === 'Ashfall' && player.level >= 25;
+        btn.style.display = canChallenge ? 'inline-block' : 'none';
+      }
+    }
+
+    function updateVoidRealmButtonVisibility() {
+      const btn = document.getElementById('travelVoidRealmBtn');
+      if (btn) {
+        const canTravel = player.level >= 20;
+        btn.style.display = canTravel ? 'inline-block' : 'none';
+      }
+    }
+
     function challengeVorthalon() {
       if (player.town !== 'Ashfall' || player.level < 15) {
         log("You sense a presence, but you are not yet ready.");
@@ -1381,6 +1567,18 @@ _,' 🔥   \_>\_/ 🔥   ',_
       document.getElementById("enemyBox").textContent = enemyAscii[enemy] || "";
       inCombat = true;
       // Quest progress for accepting the challenge counts as a killNamed only on defeat
+    }
+
+    function challengeMalachar() {
+      if (player.town !== 'Ashfall' || player.level < 25) {
+        log("You sense a dark presence, but you are not yet ready.");
+        return;
+      }
+      const enemy = "Malachar, Void Devourer";
+      currentEnemy = { name: enemy, hp: 350, dungeon: 'Void Realm', arena: false, defeated: false };
+      log("You challenge " + enemy + "! HP: " + currentEnemy.hp);
+      document.getElementById("enemyBox").textContent = enemyAscii[enemy] || "";
+      inCombat = true;
     }
 
     function calculateDrop(dungeonName, playerLevel) {
@@ -1908,6 +2106,10 @@ _,' 🔥   \_>\_/ 🔥   ',_
           player.level++;
           log("Level up! You are now level " + player.level);
           updateVorthalonButtonVisibility();
+    updateMalacharButtonVisibility();
+    updateVoidRealmButtonVisibility();
+      updateMalacharButtonVisibility();
+          updateMalacharButtonVisibility();
           awardSkillPointOnLevel();
         }
         
@@ -1946,10 +2148,17 @@ _,' 🔥   \_>\_/ 🔥   ',_
         log("Ashfall is too dangerous until you reach level 15!");
         return;
       }
+      if (destination === "Void Realm" && player.level < 20) {
+        log("The Void Realm is too dangerous until you reach level 20!");
+        return;
+      }
       player.town = destination;
       document.getElementById("townAscii").textContent = townAsciiArt[destination];
       log("You travel to " + destination + ".");
       updateVorthalonButtonVisibility();
+      updateMalacharButtonVisibility();
+      updateVoidRealmButtonVisibility();
+      updateVoidRealmButtonVisibility();
       // Travel quest completion
       if (activeQuest && activeQuest.type === 'travel' && activeQuest.town === destination) {
         completeActiveQuest();
@@ -1977,11 +2186,17 @@ _,' 🔥   \_>\_/ 🔥   ',_
       const p = document.getElementById('skillPowerVal');
       const f = document.getElementById('skillFocusVal');
       const v = document.getElementById('skillVitalityVal');
+      const a = document.getElementById('skillAgilityVal');
+      const d = document.getElementById('skillDefenseVal');
+      const l = document.getElementById('skillLuckVal');
       const picker = document.getElementById('classPicker');
       if (pts) pts.textContent = String(skillState.pointsUnspent);
       if (p) p.textContent = String(skillState.power);
       if (f) f.textContent = String(skillState.focus);
       if (v) v.textContent = String(skillState.vitality);
+      if (a) a.textContent = String(skillState.agility);
+      if (d) d.textContent = String(skillState.defense);
+      if (l) l.textContent = String(skillState.luck);
       if (picker && picker.value !== skillState.className) picker.value = skillState.className;
     }
 
@@ -2001,6 +2216,12 @@ _,' 🔥   \_>\_/ 🔥   ',_
         skillState.vitality++;
         player.maxHp += 5;
         player.hp = Math.min(player.hp + 5, player.maxHp);
+      } else if (stat === 'agility') {
+        skillState.agility++;
+      } else if (stat === 'defense') {
+        skillState.defense++;
+      } else if (stat === 'luck') {
+        skillState.luck++;
       }
       skillState.pointsUnspent--;
       updateSkillTreeUI();
@@ -2270,6 +2491,9 @@ _,' 🔥   \_>\_/ 🔥   ',_
       document.getElementById("townAscii").textContent = townAsciiArt[player.town];
       updateInventory();
       updateVorthalonButtonVisibility();
+    updateMalacharButtonVisibility();
+    updateVoidRealmButtonVisibility();
+      updateMalacharButtonVisibility();
       renderQuestList();
       updateAbandonButton();
       updateShop();
@@ -2706,6 +2930,324 @@ _,' 🔥   \_>\_/ 🔥   ',_
       renderDailyChallenges();
     }
 
+    // --- Fishing System ---
+    function toggleFishing() {
+      const card = document.getElementById('fishingCard');
+      const show = card.style.display === 'none' || card.style.display === '';
+      card.style.display = show ? 'block' : 'none';
+      if (show) renderFishing();
+    }
+
+    function renderFishing() {
+      const status = document.getElementById('fishingStatus');
+      const actions = document.getElementById('fishingActions');
+      
+      status.innerHTML = `
+        <div><b>Fishing Spot</b></div>
+        <div style="font-size:12px;color:#9f9">Total caught: ${fishing.totalCaught}</div>
+        <div style="font-size:11px;color:#9f9">Difficulty: ${fishing.difficulty}/5</div>
+      `;
+      
+      if (fishing.active) {
+        actions.innerHTML = `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Fishing in progress...</b></div>
+            <button onclick="stopFishing()">Stop Fishing</button>
+          </div>
+        `;
+      } else {
+        actions.innerHTML = `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Start Fishing</b></div>
+            <button onclick="startFishing()">Cast Line</button>
+          </div>
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Upgrade Gear</b></div>
+            <button onclick="upgradeFishingGear()">Upgrade (${fishing.difficulty * 50}g)</button>
+          </div>
+        `;
+      }
+    }
+
+    function startFishing() {
+      if (fishing.active) return;
+      
+      fishing.active = true;
+      fishing.progress = 0;
+      
+      const progressDiv = document.getElementById('fishingProgress');
+      const bar = document.getElementById('fishingBar');
+      progressDiv.style.display = 'block';
+      
+      const fishingInterval = setInterval(() => {
+        fishing.progress += Math.random() * 10;
+        bar.style.width = Math.min(fishing.progress, 100) + '%';
+        
+        if (fishing.progress >= 100) {
+          clearInterval(fishingInterval);
+          completeFishing();
+        }
+      }, 200);
+      
+      renderFishing();
+    }
+
+    function stopFishing() {
+      fishing.active = false;
+      fishing.progress = 0;
+      document.getElementById('fishingProgress').style.display = 'none';
+      renderFishing();
+    }
+
+    function completeFishing() {
+      fishing.active = false;
+      fishing.progress = 0;
+      document.getElementById('fishingProgress').style.display = 'none';
+      
+      // Determine catch based on difficulty and luck
+      const luckBonus = skillState.luck || 0;
+      const catchChance = Math.random() * 100 + luckBonus;
+      
+      let caughtItem = null;
+      if (catchChance < 40) {
+        caughtItem = "Common Fish";
+      } else if (catchChance < 70) {
+        caughtItem = "Silver Fish";
+      } else if (catchChance < 90) {
+        caughtItem = "Golden Fish";
+      } else if (catchChance < 98) {
+        caughtItem = "Rainbow Trout";
+      } else {
+        caughtItem = "Ancient Carp";
+      }
+      
+      // Small chance for treasure
+      if (Math.random() < 0.1) {
+        caughtItem = "Pearl";
+      }
+      
+      if (!player.inventory[caughtItem]) player.inventory[caughtItem] = 0;
+      player.inventory[caughtItem]++;
+      fishing.totalCaught++;
+      
+      const value = itemPool[caughtItem].value;
+      player.gold += value;
+      player.xp += Math.floor(value / 2);
+      
+      log(`🎣 Caught: ${caughtItem} (+${value}g, +${Math.floor(value/2)}xp)`);
+      
+      updateInventory();
+      renderFishing();
+    }
+
+    function upgradeFishingGear() {
+      const cost = fishing.difficulty * 50;
+      if (player.gold < cost) {
+        log("Not enough gold to upgrade fishing gear!");
+        return;
+      }
+      
+      player.gold -= cost;
+      fishing.difficulty++;
+      log(`🎣 Fishing gear upgraded to level ${fishing.difficulty}!`);
+      
+      updateInventory();
+      renderFishing();
+    }
+
+    // --- Hunting System ---
+    function toggleHunting() {
+      const card = document.getElementById('huntingCard');
+      const show = card.style.display === 'none' || card.style.display === '';
+      card.style.display = show ? 'block' : 'none';
+      if (show) renderHunting();
+    }
+
+    function renderHunting() {
+      const status = document.getElementById('huntingStatus');
+      const actions = document.getElementById('huntingActions');
+      
+      status.innerHTML = `
+        <div><b>Hunting Grounds</b></div>
+        <div style="font-size:12px;color:#9f9">Total hunted: ${hunting.totalHunted}</div>
+        <div style="font-size:11px;color:#9f9">Difficulty: ${hunting.difficulty}/5</div>
+      `;
+      
+      if (hunting.active) {
+        actions.innerHTML = `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Hunting in progress...</b></div>
+            <button onclick="stopHunting()">Stop Hunting</button>
+          </div>
+        `;
+      } else {
+        actions.innerHTML = `
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Start Hunting</b></div>
+            <button onclick="startHunting()">Begin Hunt</button>
+          </div>
+          <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+            <div><b>Upgrade Gear</b></div>
+            <button onclick="upgradeHuntingGear()">Upgrade (${hunting.difficulty * 75}g)</button>
+          </div>
+        `;
+      }
+    }
+
+    function startHunting() {
+      if (hunting.active) return;
+      
+      hunting.active = true;
+      hunting.progress = 0;
+      
+      const progressDiv = document.getElementById('huntingProgress');
+      const bar = document.getElementById('huntingBar');
+      progressDiv.style.display = 'block';
+      
+      const huntingInterval = setInterval(() => {
+        hunting.progress += Math.random() * 8;
+        bar.style.width = Math.min(hunting.progress, 100) + '%';
+        
+        if (hunting.progress >= 100) {
+          clearInterval(huntingInterval);
+          completeHunting();
+        }
+      }, 250);
+      
+      renderHunting();
+    }
+
+    function stopHunting() {
+      hunting.active = false;
+      hunting.progress = 0;
+      document.getElementById('huntingProgress').style.display = 'none';
+      renderHunting();
+    }
+
+    function completeHunting() {
+      hunting.active = false;
+      hunting.progress = 0;
+      document.getElementById('huntingProgress').style.display = 'none';
+      
+      // Determine catch based on difficulty and agility
+      const agilityBonus = skillState.agility || 0;
+      const huntChance = Math.random() * 100 + agilityBonus;
+      
+      let huntedItem = null;
+      if (huntChance < 35) {
+        huntedItem = "Rabbit Pelt";
+      } else if (huntChance < 65) {
+        huntedItem = "Deer Hide";
+      } else if (huntChance < 85) {
+        huntedItem = "Wolf Fur";
+      } else if (huntChance < 95) {
+        huntedItem = "Bear Claw";
+      } else {
+        huntedItem = "Antler";
+      }
+      
+      if (!player.inventory[huntedItem]) player.inventory[huntedItem] = 0;
+      player.inventory[huntedItem]++;
+      hunting.totalHunted++;
+      
+      const value = itemPool[huntedItem].value;
+      player.gold += value;
+      player.xp += Math.floor(value / 3);
+      
+      log(`🏹 Hunted: ${huntedItem} (+${value}g, +${Math.floor(value/3)}xp)`);
+      
+      updateInventory();
+      renderHunting();
+    }
+
+    function upgradeHuntingGear() {
+      const cost = hunting.difficulty * 75;
+      if (player.gold < cost) {
+        log("Not enough gold to upgrade hunting gear!");
+        return;
+      }
+      
+      player.gold -= cost;
+      hunting.difficulty++;
+      log(`🏹 Hunting gear upgraded to level ${hunting.difficulty}!`);
+      
+      updateInventory();
+      renderHunting();
+    }
+
+    // --- Housing System ---
+    function toggleHousing() {
+      const card = document.getElementById('housingCard');
+      const show = card.style.display === 'none' || card.style.display === '';
+      card.style.display = show ? 'block' : 'none';
+      if (show) renderHousing();
+    }
+
+    function renderHousing() {
+      const status = document.getElementById('housingStatus');
+      const actions = document.getElementById('housingActions');
+      
+      status.innerHTML = `
+        <div><b>Player Housing</b></div>
+        <div style="font-size:12px;color:#9f9">Level: ${housing.level}</div>
+        <div style="font-size:11px;color:#9f9">Rooms: ${housing.rooms.join(', ')}</div>
+      `;
+      
+      actions.innerHTML = `
+        <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+          <div><b>Upgrade House</b></div>
+          <button onclick="upgradeHouse()">Upgrade (${housing.level * 200}g)</button>
+        </div>
+        <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+          <div><b>Add Room</b></div>
+          <button onclick="addRoom()">Add Room (${housing.rooms.length * 150}g)</button>
+        </div>
+        <div style="border:1px dashed #0f0;padding:6px;text-align:center">
+          <div><b>Rest Here</b></div>
+          <button onclick="restAtHome()">Rest (+${housing.level * 10} HP)</button>
+        </div>
+      `;
+    }
+
+    function upgradeHouse() {
+      const cost = housing.level * 200;
+      if (player.gold < cost) {
+        log("Not enough gold to upgrade house!");
+        return;
+      }
+      
+      player.gold -= cost;
+      housing.level++;
+      log(`🏠 House upgraded to level ${housing.level}!`);
+      
+      updateInventory();
+      renderHousing();
+    }
+
+    function addRoom() {
+      const cost = housing.rooms.length * 150;
+      if (player.gold < cost) {
+        log("Not enough gold to add room!");
+        return;
+      }
+      
+      const roomTypes = ['kitchen', 'library', 'workshop', 'garden', 'storage'];
+      const newRoom = roomTypes[housing.rooms.length - 1] || 'extra_room';
+      
+      player.gold -= cost;
+      housing.rooms.push(newRoom);
+      log(`🏠 Added ${newRoom} to your house!`);
+      
+      updateInventory();
+      renderHousing();
+    }
+
+    function restAtHome() {
+      const healAmount = housing.level * 10;
+      player.hp = Math.min(player.hp + healAmount, player.maxHp);
+      log(`🏠 Rested at home! (+${healAmount} HP)`);
+    }
+
     // --- Initialization Functions ---
     function initAchievements() {
       // Check for first blood achievement
@@ -2787,6 +3329,8 @@ _,' 🔥   \_>\_/ 🔥   ',_
 
     updateInventory();
     updateVorthalonButtonVisibility();
+    updateMalacharButtonVisibility();
+    updateVoidRealmButtonVisibility();
     initQuestPool();
     refreshQuestsNow();
     scheduleNextQuestRefresh();
